@@ -48,8 +48,8 @@ download.file(url = "https://img.shields.io/badge/Made%20with-Markdown-1f425f.pn
 Each year, predicts a raster of fire spread probabilities from the parameters fitted by *fireSense_spreadFit*, for the spread component of fireSense [@Marchal:2017a; @Marchal:2017b; @Marchal:2019].
 
 1. The covariates in `fireSense_SpreadCovariates` are rescaled to [0, 1] using `covMinMax_spread`, the range of the fitting data.
-2. For each parameter set (row) in `studyAreaWithSpreadParams$params[[1]]`, the spread probability is a 2- or 3-parameter logistic of the linear combination of the covariates, with lower asymptote `lowerSpreadProb`.
-3. `fireSense_SpreadPredicted` is the mean over parameter sets, on the `flammableRTM` grid.
+2. With the one parameter set (row of `studyAreaWithSpreadParams$params[[i]]`) chosen by `.rep`, i.e. row `((rep - 1) %% number of sets) + 1` of each ELF, the spread probability is a 2- or 3-parameter logistic of the linear combination of the covariates, with lower asymptote `lowerSpreadProb`.
+3. `fireSense_SpreadPredicted` is that single set's prediction (sets are not averaged), and `fireSense_SpreadSD` its `yearSpreadSD`, on the `flammableRTM` grid.
 
 ### Module inputs and parameters
 

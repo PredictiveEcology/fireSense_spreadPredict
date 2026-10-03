@@ -1,5 +1,7 @@
 # fireSense_spreadPredict (development version)
 
+- Predictions no longer average parameter sets (`spreadProbOneELF()` took `rowMeans()` of one map per row, and `yearSpreadSDOf()` the mean `yearSpreadSD`, which broke the pairing of each set's `yearSpreadSD` with its own coefficients). New parameter `.rep` (integer, default 1): replicate `.rep` uses the one whole parameter set `((rep - 1) %% number of sets) + 1` of each ELF, and `fireSense_SpreadSD` is that set's `yearSpreadSD`. `.rep` is a SpaDES-aware parameter: `SpaDES.project::setupProject()` sets `.globals$.rep` from the experiment's `.rep` (PredictiveEcology/SpaDES.project#190), so nothing needs wiring by hand.
+
 - reqdPkgs now lists `data.table`, which the module calls (`copy`, `data.table`, `setDT`) but did not list. Version 1.1.2.
 
 - `spreadProbOneELF()` (fireSense_spreadPredict.R:266-323 pre-fix) went on when a fitted coefficient had no covariate column, and died in `rowMeans(spreadProbMat)` with "'x' must be an array of at least two dimensions" (a predict-only run whose fit had `nfLCC_100_60` and `nfLCC_40_50_80` but whose covariates had a single `nf`). It now stops at once, naming the coefficients without a covariate and the covariates available, and says the non-forest groups / fuel classes differ from the fit's. Version 1.1.1.

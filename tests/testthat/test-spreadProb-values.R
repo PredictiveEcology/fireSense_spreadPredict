@@ -2,7 +2,7 @@
 ##
 ## The run event (1) turns covariates into integers x 1000, (2) rescales each to [0, 1] with
 ## the FIT's min/max in `covMinMax_spread`, (3) takes the linear combination with the fitted
-## coefficients, (4) puts it through the logistic, (5) averages over parameter rows, and
+## coefficients, (4) puts it through the logistic, (5) uses one parameter row, chosen by `.rep`, and
 ## (6) writes the values to the cells given by `pixelID`.
 
 test_that("spread probability is the logistic of covariates rescaled with the fit's min/max", {
@@ -88,17 +88,6 @@ test_that("covariates are rounded to 3 decimals by the x 1000 integer step", {
   expect_equal(v[7], handLogistic3(1.0635), tolerance = 1e-9)
   ## and not the unrounded value, which differs in the 5th decimal
   expect_gt(abs(v[1] - handLogistic3(-0.5 * 0.1236)), 1e-6)
-})
-
-test_that("the prediction is the mean over parameter rows", {
-  p <- rbind(toyParams(), toyParams())
-  p$maxAsymptote <- c(0.25, 0.35)
-  p$MDC <- c(1.5, 0)
-  v <- predVals(toyRun(toyInputs(params = p)))
-  ## cell 1, x = 0 for both rows: (0.13 + 0.12/2 + 0.13 + 0.22/2) / 2 = (0.19 + 0.24) / 2
-  expect_equal(v[1], 0.215, tolerance = 1e-7)
-  ## cell 7 (MDC 150, no fuel): row 1 x = 1.125; row 2 has no MDC effect, x = 0 -> 0.24
-  expect_equal(v[7], (handLogistic3(1.125) + 0.24) / 2, tolerance = 1e-7)
 })
 
 test_that("a single parameter row and a single pixel both work", {
@@ -217,12 +206,12 @@ test_that("a fit with upperTail1 is predicted with the upper-tail link, from the
   expect_equal(v0, predVals(toyRun()), tolerance = 1e-12)
 })
 
-test_that("one ELF: yearSpreadSD is not a coefficient; fireSense_SpreadSD is its mean over parameter sets", {
+test_that("one ELF: yearSpreadSD is not a coefficient; fireSense_SpreadSD is the chosen set's value", {
   base <- toyRun()
   p2 <- rbind(toyParams(), toyParams())
   p2$yearSpreadSD <- c(0.3, 0.5)
   sim <- toyRun(toyInputs(params = p2))
   expect_equal(predVals(sim), predVals(base), tolerance = 1e-12)
-  expect_equal(sim$fireSense_SpreadSD, 0.4)
+  expect_equal(sim$fireSense_SpreadSD, 0.3)
   expect_identical(toyRun()$fireSense_SpreadSD, 0)
 })

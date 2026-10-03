@@ -76,3 +76,24 @@ evOf <- function(dt, type) {
   df <- as.data.frame(dt)
   df[df$moduleName == "fireSense_spreadPredict" & df$eventType == type, , drop = FALSE]
 }
+
+## Two ELFs, "A" and "B", for the multi-ELF tests (see test-multiELF.R for the layout).
+multiInputs <- function() {
+  crs <- "EPSG:3005"
+  flam <- terra::rast(nrows = 1, ncols = 10, xmin = 0, xmax = 50000, ymin = 0, ymax = 5000, crs = crs, vals = 1)
+  elf <- terra::rast(flam); terra::values(elf) <- rep(1:2, each = 5)
+  levels(elf) <- data.frame(id = 1:2, ELFind = c("A", "B"))
+  covs <- data.table::data.table(pixelID = 1:10, MDC = 100, fuelA = 2, fuelB = 3)
+  pars <- function(max, fuel) {
+    d <- data.frame(maxAsymptote = max, hillSlope1 = 2, inflectionPoint1 = 1, MDC = 0, x = 0)
+    names(d)[5] <- fuel
+    d
+  }
+  cmm <- function(fuel) { d <- data.table::data.table(MDC = c(0, 200), f = c(0, 8)); data.table::setnames(d, "f", fuel); d }
+  sa <- data.frame(polygonID = c("A", "B"))
+  sa$params <- list(pars(0.25, "fuelA"), pars(0.27, "fuelB"))
+  sa$covMinMax_spread <- list(cmm("fuelA"), cmm("fuelB"))
+  list(flammableRTM = flam, rasterToMatchLargeELF = elf, fireSense_SpreadCovariates = covs,
+       studyAreaWithSpreadParams = sa, fireSense_spreadFormula = "~ MDC + fuelA - 1",
+       covMinMax_spread = cmm("fuelA"))
+}
