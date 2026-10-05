@@ -266,6 +266,26 @@ Upper limit on <code>spreadProb</code> used when fitting. Here it is only checke
 </tr>
 <tr>
 <td style="text-align:left;">
+.rep
+</td>
+<td style="text-align:left;">
+integer
+</td>
+<td style="text-align:left;">
+1
+</td>
+<td style="text-align:left;">
+1
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+Which replicate this prediction is. It selects parameter set ((rep - 1) %% number of sets) + 1 of each ELF, so replicates cycle through the fitted sets, each used whole (with its own <code>yearSpreadSD</code>), never averaged.
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
 .runInitialTime
 </td>
 <td style="text-align:left;">
@@ -419,7 +439,7 @@ fireSense_SpreadSD
 SpatRaster&amp;#124;numeric
 </td>
 <td style="text-align:left;">
-The fitted sd of the per-year random effect on logit spread probability (<code>yearSpreadSD</code>; 0 if the fit has none), for <code>fireSense_burn</code>. One number with one fitted ELF; with several, a raster blended across ELFs with the weights of <code>fireSense_SpreadPredicted</code>.
+The fitted sd of the per-year random effect on logit spread probability (<code>yearSpreadSD</code> of the parameter set chosen by <code>.rep</code>; 0 if the fit has none), for <code>fireSense_burn</code>. One number with one fitted ELF; with several, a raster blended across ELFs with the weights of <code>fireSense_SpreadPredicted</code>.
 </td>
 </tr>
 </tbody>

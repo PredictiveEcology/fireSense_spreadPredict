@@ -65,7 +65,8 @@
 <span>  <span class="va">yr</span>,</span>
 <span>  <span class="va">maxFireSpread</span>,</span>
 <span>  <span class="va">lowerSpreadProb</span>,</span>
-<span>  byParams <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  byParams <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  covCentre <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -98,6 +99,13 @@ makes them; fuel biomass logged).</p></dd>
 <dt id="arg-byparams">byParams<a class="anchor" aria-label="anchor" href="#arg-byparams"></a></dt>
 <dd><p>logical; <code>TRUE</code> (several ELFs) ignores <code>formula</code>: the covariates are those named in
 <code>params</code>, and the table is cut to them, since it holds every ELF's covariates.</p></dd>
+
+
+<dt id="arg-covcentre">covCentre<a class="anchor" aria-label="anchor" href="#arg-covcentre"></a></dt>
+<dd><p>the ELF's <code>covCentre_spread</code> (<code><a href="ledgerCovCentre.html">ledgerCovCentre()</a></code>): the covariate means the fit subtracted
+from the rescaled covariates; <code>NULL</code> (a fit without an intercept, or an older ledger row) centres nothing.
+A parameter set with <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/fireSenseUtils-constants.html" class="external-link">fireSenseUtils::spreadInterceptTxt</a></code> has an intercept, added as a column of 1s after
+the covariates are rescaled and centred, as in the fit.</p></dd>
 
 </dl></div>
     <div id="value">
