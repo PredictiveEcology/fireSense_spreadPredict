@@ -151,7 +151,8 @@ spreadPredictRun <- function(sim) {
     params1 <- paramSetForRep(sa$params[[1]], P(sim)$.rep)
     pred <- spreadProbOneELF(covs, params = params1, covMinMax = sim$covMinMax_spread,
                              formula = sim$fireSense_spreadFormula, yr = time(sim),
-                             maxFireSpread = P(sim)$maxFireSpread, lowerSpreadProb = P(sim)$lowerSpreadProb)
+                             maxFireSpread = P(sim)$maxFireSpread, lowerSpreadProb = P(sim)$lowerSpreadProb,
+                             covCentre = ledgerCovCentre(sa, 1L))
     sim$fireSense_SpreadSD <- yearSpreadSDOf(params1)
   } else {
     ids <- as.character(sa[[fireSenseUtils::polygonIDTxt]])
@@ -171,7 +172,8 @@ spreadPredictRun <- function(sim) {
       parsI <- paramSetForRep(sa$params[[i]], P(sim)$.rep)
       p <- spreadProbOneELF(covs[these], params = parsI, covMinMax = sa$covMinMax_spread[[i]],
                             formula = NULL, yr = time(sim), maxFireSpread = P(sim)$maxFireSpread,
-                            lowerSpreadProb = P(sim)$lowerSpreadProb, byParams = TRUE)
+                            lowerSpreadProb = P(sim)$lowerSpreadProb, byParams = TRUE,
+                            covCentre = ledgerCovCentre(sa, i))
       rows <- these[match(p$pixelID, covs$pixelID[these])]
       acc[rows] <- acc[rows] + w[rows, i] * p$spreadProb
       accSD[rows] <- accSD[rows] + w[rows, i] * yearSpreadSDOf(parsI)
@@ -240,9 +242,13 @@ ELFblendWeights <- function(elfRas, template, pixelID, ids, width) {
 #'   `params`, and the table is cut to them, since it holds every ELF's covariates.
 #' @param yr,maxFireSpread,lowerSpreadProb as for `fireSenseUtils::spreadProbFromIntegerCovs()` and
 #'   `fireSenseUtils::logisticAll()`.
+#' @param covCentre the ELF's `covCentre_spread` (`ledgerCovCentre()`): the covariate means the fit subtracted
+#'   from the rescaled covariates; `NULL` (a fit without an intercept, or an older ledger row) centres nothing.
+#'   A parameter set with `fireSenseUtils::spreadInterceptTxt` has an intercept, added as a column of 1s after
+#'   the covariates are rescaled and centred, as in the fit.
 #' @return `data.table` with `pixelID` and `spreadProb`, from the one parameter set in `params`.
 spreadProbOneELF <- function(covs, params, covMinMax, formula, yr, maxFireSpread, lowerSpreadProb,
-                             byParams = FALSE) {
+                             byParams = FALSE, covCentre = NULL) {
   moduleName <- "fireSense_spreadPredict"
   covs <- copy(covs)
   ## the per-year random effect is not a covariate coefficient: fireSense_burn applies it (fireSense_SpreadSD)
@@ -265,7 +271,9 @@ spreadProbOneELF <- function(covs, params, covMinMax, formula, yr, maxFireSpread
 
   ## every fitted coefficient needs a covariate: without one the logistic gets no covariates and
   ## fails later in rowMeans(), with no hint of the cause
-  fitted <- setdiff(names(params), unlist(fireSenseUtils::logisticParamNames))
+  ## the intercept, if the fit has one, is a coefficient with no covariate: it multiplies a column of 1s
+  hasIntercept <- fireSenseUtils::spreadInterceptTxt %in% names(params)
+  fitted <- setdiff(names(params), c(unlist(fireSenseUtils::logisticParamNames), fireSenseUtils::spreadInterceptTxt))
   noCov <- setdiff(fitted, names(covs))
   if (length(noCov)) {
     stop(
@@ -278,7 +286,7 @@ spreadProbOneELF <- function(covs, params, covMinMax, formula, yr, maxFireSpread
 
   ## the covariates this ELF was fitted with
   needed <- if (isTRUE(byParams)) {
-    setdiff(names(params), unlist(fireSenseUtils::logisticParamNames))
+    fitted
   } else {
     terms <- delete.response(terms.formula(as.formula(formula)))
     all.vars(reformulate(attr(terms, "term.labels"), intercept = attr(terms, "intercept")))
@@ -297,6 +305,8 @@ spreadProbOneELF <- function(covs, params, covMinMax, formula, yr, maxFireSpread
   # integers x 1000, the form `spreadProbFromIntegerCovs` expects
   shortAnnDTx1000 <- toX1000(list(covs))[[1]] |> setDT()
   colsToUse <- setdiff(names(covs), "pixelID")
+  ## what the coefficients multiply: the intercept first, as in the fit (fireSenseUtils::spreadDesignCols())
+  designCols <- c(if (hasIntercept) fireSenseUtils::spreadInterceptTxt, colsToUse)
 
   ## youngAge is mutually exclusive with every other non-climate covariate, exactly as in the fit
   ## (fireSense_spreadFit::spreadFitPrep()): wherever youngAge is non-zero, fuel biomass, nfLCC_*
@@ -314,16 +324,17 @@ spreadProbOneELF <- function(covs, params, covMinMax, formula, yr, maxFireSpread
                               yr = yr,
                               covMinMax = covMinMax,
                               mutuallyExclusive = mutuallyExclusive,
-                              colsToUse = colsToUse,
+                              colsToUse = designCols,
                               doAssertions = FALSE,
                               logisticPars = params,
-                              maxFireSpread = maxFireSpread
+                              maxFireSpread = maxFireSpread,
+                              covCentre = covCentre
                               )
 
-  mat <- as.matrix(shortAnnDT[, ..colsToUse])
+  mat <- as.matrix(shortAnnDT[, ..designCols])
 
   par <- params[1L, ] |> as.vector() |> unlist()
-  covPars <- par[intersect(names(par), colsToUse)]
+  covPars <- par[intersect(names(par), designCols)]
   logisticPars <- par[setdiff(names(par), names(covPars))]
   # Make sure the order is correct in the matrix
   matching <- intersect(names(covPars), colnames(mat))
@@ -338,6 +349,22 @@ spreadProbOneELF <- function(covs, params, covMinMax, formula, yr, maxFireSpread
 }
 
 yearSpreadSDTxt <- "yearSpreadSD"
+
+#' The covariate centres of one ledger row
+#'
+#' A fit with an intercept centres its covariates and stores the centres in the ledger row
+#' (`fireSenseUtils::spreadFitCovCentreTxt`). Prediction subtracts the same values.
+#'
+#' @param sa `sim$studyAreaWithSpreadParams`, one row per ELF.
+#' @param i integer; the row.
+#' @return A named list, or `NULL` for a row without centres: a fit without an intercept, or a row written
+#'   before they were stored. Such a row predicts exactly as it always did.
+ledgerCovCentre <- function(sa, i) {
+  col <- fireSenseUtils::spreadFitCovCentreTxt
+  if (!col %in% names(sa)) return(NULL)
+  centre <- sa[[col]][[i]]
+  if (is.list(centre) && length(centre)) centre else NULL
+}
 
 #' The parameter set a replicate uses
 #'

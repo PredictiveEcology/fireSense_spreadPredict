@@ -1,5 +1,7 @@
 # fireSense_spreadPredict (development version)
 
+- A ledger row from a fit with an intercept (a parameter named `fireSenseUtils::spreadInterceptTxt`, from `fireSense_dataPrepFit`'s `spreadIntercept`) is predicted with it: `spreadProbOneELF()` adds a column of 1s for it after rescaling and centring, and subtracts the row's stored covariate centres (`fireSenseUtils::spreadFitCovCentreTxt`, `ledgerCovCentre()`) from the rescaled covariates, as the fit did. With several ELFs each row uses its own. A row without them, such as every row written so far, predicts exactly as before. Needs the `fireSenseUtils` change in PredictiveEcology/fireSenseUtils#131 (floor to be set once it has a version).
+
 - Predictions no longer average parameter sets (`spreadProbOneELF()` took `rowMeans()` of one map per row, and `yearSpreadSDOf()` the mean `yearSpreadSD`, which broke the pairing of each set's `yearSpreadSD` with its own coefficients). New parameter `.rep` (integer, default 1): replicate `.rep` uses the one whole parameter set `((rep - 1) %% number of sets) + 1` of each ELF, and `fireSense_SpreadSD` is that set's `yearSpreadSD`. `.rep` is a SpaDES-aware parameter: `SpaDES.project::setupProject()` sets `.globals$.rep` from the experiment's `.rep` (PredictiveEcology/SpaDES.project#190), so nothing needs wiring by hand.
 
 - reqdPkgs now lists `data.table`, which the module calls (`copy`, `data.table`, `setDT`) but did not list. Version 1.1.2.
