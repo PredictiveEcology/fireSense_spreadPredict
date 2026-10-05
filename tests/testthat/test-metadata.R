@@ -49,11 +49,18 @@ test_that("parameters have the expected names, classes and defaults", {
   expected <- data.frame(
     class   = c("integer", "numeric", "numeric", "numeric", "character", "logical", "numeric", "numeric", "numeric"),
     ## .runInitialTime defaults to start(sim), which is 0 when only metadata is parsed
-    default = c("1L", "0", "1", "NA", "NA", "FALSE", "20000", "0.13", "0.28"),
+    default = c("1L", "0", "1", "NA", "NA", "FALSE", "20000", "0.13", "0.276"),
     row.names = c(".rep", ".runInitialTime", ".runInterval", ".saveInitialTime", ".studyAreaName", ".useCache",
                   "ELFblendWidth", "lowerSpreadProb", "maxFireSpread")
   )
   expect_identical(paramTable(md), expected)
+})
+
+test_that("lowerSpreadProb and maxFireSpread default to fireSenseUtils' one floor and one ceiling", {
+  md <- SpaDES.core::moduleMetadata(module = moduleName, path = modulePath)
+  dflt <- function(nm) md$parameters$default[[match(nm, md$parameters$paramName)]]
+  expect_identical(dflt("lowerSpreadProb"), fireSenseUtils::spreadProbFloor)
+  expect_identical(dflt("maxFireSpread"), fireSenseUtils::spreadProbCeiling)
 })
 
 test_that("fireSenseUtils is a declared dependency, so CI installs it", {

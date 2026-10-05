@@ -1,3 +1,7 @@
+# fireSense_spreadPredict (development version)
+
+- `lowerSpreadProb` and `maxFireSpread` default to `fireSenseUtils::spreadProbFloor` (0.13) and `fireSenseUtils::spreadProbCeiling` (0.276; `maxFireSpread` was 0.28), the one floor and ceiling `fireSense_spreadFit` and the objective use. `maxFireSpread` does not change a prediction. Needs the `fireSenseUtils` change in PredictiveEcology/fireSenseUtils (floor to be set once it has a version).
+
 # fireSense_spreadPredict 1.1.3
 
 - A ledger row from a fit with an intercept (a parameter named `fireSenseUtils::spreadInterceptTxt`, from `fireSense_dataPrepFit`'s `spreadIntercept`) is predicted with it: `spreadProbOneELF()` adds a column of 1s for it after rescaling and centring, and subtracts the row's stored covariate centres (`fireSenseUtils::spreadFitCovCentreTxt`, `ledgerCovCentre()`) from the rescaled covariates, as the fit did. With several ELFs each row uses its own. A row without them, such as every row written so far, predicts exactly as before. Needs fireSenseUtils >= 0.2.3.9083 (PredictiveEcology/fireSenseUtils#131).
