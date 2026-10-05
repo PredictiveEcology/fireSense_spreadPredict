@@ -1,4 +1,4 @@
-# fireSense_spreadPredict (development version)
+# fireSense_spreadPredict 1.1.4
 
 - `lowerSpreadProb` and `maxFireSpread` default to `fireSenseUtils::spreadProbFloor` (0.13) and `fireSenseUtils::spreadProbCeiling` (0.276; `maxFireSpread` was 0.28), the one floor and ceiling `fireSense_spreadFit` and the objective use. `maxFireSpread` does not change a prediction. Needs the `fireSenseUtils` change in PredictiveEcology/fireSenseUtils (floor to be set once it has a version).
 
