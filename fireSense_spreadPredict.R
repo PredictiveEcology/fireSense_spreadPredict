@@ -10,14 +10,14 @@ defineModule(sim, list(
     person("Alex M.", "Chubaty", email = "achubaty@for-cast.ca", role = "ctb")
   ),
   childModules = character(),
-  version = list(fireSense_spreadPredict = "1.1.2", SpaDES.core = "0.1.0"),
+  version = list(fireSense_spreadPredict = "1.1.3", SpaDES.core = "0.1.0"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "fireSense_spreadPredict.Rmd"),
   reqdPkgs = list("data.table", "magrittr", "Matrix", "methods", "terra", "SpaDES.core (>=3.0.4)", "stats",
                   "ggplot2", "viridis",
-                  "PredictiveEcology/fireSenseUtils@development (>= 0.2.3.9048)"),
+                  "PredictiveEcology/fireSenseUtils@development (>= 0.2.3.9083)"),
   parameters = bindrows(
     defineParameter(name = "lowerSpreadProb", class = "numeric", default = 0.13,
                     desc = "Lower asymptote of the 2- and 3-parameter logistic."),
