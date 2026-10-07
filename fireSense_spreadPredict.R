@@ -10,7 +10,7 @@ defineModule(sim, list(
     person("Alex M.", "Chubaty", email = "achubaty@for-cast.ca", role = "ctb")
   ),
   childModules = character(),
-  version = list(fireSense_spreadPredict = "1.2.0", SpaDES.core = "0.1.0"),
+  version = list(fireSense_spreadPredict = "1.2.0.9000", SpaDES.core = "0.1.0"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
