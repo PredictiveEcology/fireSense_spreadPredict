@@ -1,3 +1,9 @@
+# fireSense_spreadPredict 1.2.0
+
+This release lets fire spread be forecast across study areas that contain several fire regions, each with its own fitted model, with predictions blended smoothly across the boundaries between them. Each simulation replicate now uses one complete set of fitted values instead of an average of all of them, so the spread of results across replicates reflects the uncertainty in the fit. The fitted year-to-year variation in fire spread is passed on to the fire simulation.
+
+Forecasts now follow the same rules as the fit for young forest and for the types of models the fitting module can produce, and the module stops with a clear message when a fitted model and the forecast data do not match, instead of failing with a cryptic error. It is renamed `fireSense_spreadPredict` (lower-case "s"), so projects need to update the name they use for it.
+
 # fireSense_spreadPredict 1.1.4
 
 - `lowerSpreadProb` and `maxFireSpread` default to `fireSenseUtils::spreadProbFloor` (0.13) and `fireSenseUtils::spreadProbCeiling` (0.276; `maxFireSpread` was 0.28), the one floor and ceiling `fireSense_spreadFit` and the objective use. `maxFireSpread` does not change a prediction. Needs the `fireSenseUtils` change in PredictiveEcology/fireSenseUtils (floor to be set once it has a version).
