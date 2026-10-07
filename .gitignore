@@ -5,5 +5,5 @@
 .DS_Store
 .quarto
 
-fireSense_SpreadPredict_cache/
-fireSense_SpreadPredict2.Rmd
+fireSense_spreadPredict_cache/
+fireSense_spreadPredict2.Rmd

@@ -25,8 +25,8 @@ on:
       - development
     paths:
       - .github/workflows/render-module-rmd.yaml
-      - fireSense_SpreadPredict.Rmd
-      - fireSense_SpreadPredict.R
+      - fireSense_spreadPredict.Rmd
+      - fireSense_spreadPredict.R
   workflow_dispatch:
 
 jobs:
@@ -40,4 +40,4 @@ jobs:
       contents: write
     uses: PredictiveEcology/actions/.github/workflows/render-module-rmd.yaml@main
     with:
-      module: fireSense_SpreadPredict
+      module: fireSense_spreadPredict

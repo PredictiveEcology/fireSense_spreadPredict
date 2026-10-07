@@ -1,0 +1,107 @@
+---
+title: "fireSense_spreadPredict Manual"
+subtitle: "v.`r SpaDES.core::moduleMetadata(module = 'fireSense_spreadPredict', path = '..')$version`"
+date: "Last updated: `r Sys.Date()`"
+output:
+  bookdown::html_document2:
+    toc: true
+    toc_float: true
+    theme: sandstone
+    number_sections: false
+    df_print: paged
+    keep_md: yes
+editor_options:
+  chunk_output_type: console
+bibliography: citations/references_fireSense_spreadPredict.bib
+link-citations: true
+always_allow_html: true
+---
+
+# fireSense_spreadPredict Module
+
+<!-- the following are text references used in captions for LaTeX compatibility -->
+(ref:fireSense-spreadPredict) *fireSense_spreadPredict*
+
+```{r setup-fireSense-spreadPredict, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE, results = "hold") ## change to eval = TRUE if all chunks are to be evaluated
+
+dir.create("figures", showWarnings = FALSE)
+
+download.file(url = "https://img.shields.io/badge/Made%20with-Markdown-1f425f.png",
+              destfile = "figures/markdownBadge.png",
+              mode = "wb")
+```
+
+[![made-with-Markdown](figures/markdownBadge.png)](https://commonmark.org)
+
+<!-- if knitting to pdf remember to add the pandoc_args: ["--extract-media", "."] option to yml in order to get the badge images -->
+
+#### Authors:
+
+`r paste(as.character(SpaDES.core::moduleMetadata(module = "fireSense_spreadPredict", path = '..')$authors), sep = ', ')`
+<!-- ideally separate authors with new lines, '\n' not working -->
+
+## Module Overview
+
+### Module summary
+
+Each year, predicts a raster of fire spread probabilities from the parameters fitted by *fireSense_spreadFit*, for the spread component of fireSense [@Marchal:2017a; @Marchal:2017b; @Marchal:2019].
+
+1. The covariates in `fireSense_SpreadCovariates` are rescaled to [0, 1] using `covMinMax_spread`, the range of the fitting data.
+2. With the one parameter set (row of `studyAreaWithSpreadParams$params[[i]]`) chosen by `.rep`, i.e. row `((rep - 1) %% number of sets) + 1` of each ELF, the spread probability is a 2- or 3-parameter logistic of the linear combination of the covariates, with lower asymptote `lowerSpreadProb`.
+3. `fireSense_SpreadPredicted` is that single set's prediction (sets are not averaged), and `fireSense_SpreadSD` its `yearSpreadSD`, on the `flammableRTM` grid.
+
+### Module inputs and parameters
+
+Two objects from *fireSense_spreadFit* are read from the `simList` though they are not declared as inputs: `studyAreaWithSpreadParams` (the fitted parameters) and `fireSense_spreadFormula` (every term must be a column of `fireSense_SpreadCovariates`).
+The module stops if `studyAreaWithSpreadParams` has no parameters.
+`maxFireSpread` must have the same value in every module that defines it.
+
+Table \@ref(tab:moduleInputs-fireSense-spreadPredict) shows the full list of module inputs.
+
+```{r moduleInputs-fireSense-spreadPredict, echo = FALSE, eval = TRUE, message = FALSE, warning = FALSE}
+df_inputs <- SpaDES.core::moduleInputs("fireSense_spreadPredict", "..")
+knitr::kable(df_inputs,
+             caption = "List of (ref:fireSense-spreadPredict) input objects and their description.") |>
+  kableExtra::kable_styling(latex_options = "scale_down", full_width = TRUE)
+```
+
+Summary of user-visible parameters (Table \@ref(tab:moduleParams-fireSense-spreadPredict))
+
+
+```{r moduleParams-fireSense-spreadPredict, echo = FALSE, eval = TRUE, message = FALSE, warning = FALSE}
+df_params <- SpaDES.core::moduleParams("fireSense_spreadPredict", "..")
+knitr::kable(df_params, caption = "List of (ref:fireSense-spreadPredict) parameters and their description.") |>
+  kableExtra::kable_styling(latex_options = "scale_down", full_width = TRUE)
+```
+
+### Events
+
+- `init`: checks `maxFireSpread` against the other modules; schedules `run` at `.runInitialTime`, and `save` at `.saveInitialTime` if that is not `NA`.
+- `run`: makes the prediction described above; repeats every `.runInterval`.
+- `save`: does nothing, and says so in a message.
+
+The module does not plot anything.
+
+### Module outputs
+
+Description of the module outputs (Table \@ref(tab:moduleOutputs-fireSense-spreadPredict)).
+
+```{r moduleOutputs-fireSense-spreadPredict, echo = FALSE, eval = TRUE, message = FALSE, warning = FALSE}
+df_outputs <- SpaDES.core::moduleOutputs("fireSense_spreadPredict", "..")
+knitr::kable(df_outputs, caption = "List of (ref:fireSense-spreadPredict) outputs and their description.") |>
+  kableExtra::kable_styling(latex_options = "scale_down", full_width = TRUE)
+```
+
+### Links to other modules
+
+Runs after *fireSense_dataPrepPredict* (covariates) and *fireSense_spreadFit* (parameters). `fireSense_SpreadPredicted` is used by *fireSense_burn* to spread fires.
+It is normally run as part of the [fireSense](https://github.com/PredictiveEcology/fireSense) module group.
+
+### Getting help
+
+- <https://github.com/PredictiveEcology/fireSense_spreadPredict/issues>
+
+## References
+
+<!-- autogenerated from bibligraphy -->

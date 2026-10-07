@@ -1,7 +1,7 @@
 ## One `run` event on a tiny landscape, with inputs shaped like the ones the upstream
 ## modules make: covariates from fireSense_dataPrepPredict, the spread formula from
 ## fireSense_dataPrepFit, and `covMinMax_spread` / `studyAreaWithSpreadParams` from
-## fireSense_SpreadFit.
+## fireSense_spreadFit.
 ##
 ## `fireSense_spreadFormula` and `studyAreaWithSpreadParams` are read by the run event but
 ## are not declared in this module's `expectsInput()`; they are supplied here regardless,
@@ -16,9 +16,9 @@ spreadInputs <- function(nParRows = 2L) {
                                  MDC      = stats::runif(length(pixelID), 0, 200),
                                  youngAge = stats::runif(length(pixelID), 0, 1))
   covMinMax <- data.table::data.table(MDC = c(0, 200), youngAge = c(0, 1))
-  ## Three logistic parameters (upper asymptote, slope, shape) and one coefficient per
+  ## Three logistic parameters (upper asymptote, slope, shape), named as fitted and one coefficient per
   ## covariate, one row per retained DEoptim solution.
-  params <- data.frame(p1 = rep(0.25, nParRows), p2 = 2, p3 = 1, MDC = 1.5, youngAge = -0.5)
+  params <- data.frame(maxAsymptote = rep(0.25, nParRows), hillSlope1 = 2, inflectionPoint1 = 1, MDC = 1.5, youngAge = -0.5)
   saParams <- data.frame(ID = 1L)
   saParams$params <- list(params[seq_len(nParRows), , drop = FALSE])
   list(flammableRTM = flammableRTM,
