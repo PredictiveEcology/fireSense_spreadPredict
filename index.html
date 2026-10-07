@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">fireSense_spreadPredict</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.0.9000</span>
       </span>
     </div>
 
@@ -221,7 +221,7 @@ NA
 NA
 </td>
 <td style="text-align:left;">
-Lower asymptote of the 2- and 3-parameter logistic.
+Lower asymptote of the 2- and 3-parameter logistic. Default <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/spreadProbBounds.html" class="external-link">fireSenseUtils::spreadProbFloor</a></code>, the same constant <code>fireSense_spreadFit</code> fits with.
 </td>
 </tr>
 <tr>
@@ -252,7 +252,7 @@ maxFireSpread
 numeric
 </td>
 <td style="text-align:left;">
-0.28
+0.276
 </td>
 <td style="text-align:left;">
 NA
@@ -261,7 +261,7 @@ NA
 NA
 </td>
 <td style="text-align:left;">
-Upper limit on <code>spreadProb</code> used when fitting. Here it is only checked to be the same in every module that defines it.
+Upper limit on <code>spreadProb</code> used when fitting (default <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/spreadProbBounds.html" class="external-link">fireSenseUtils::spreadProbCeiling</a></code>). Here it is only checked to be the same in every module that defines it.
 </td>
 </tr>
 <tr>
