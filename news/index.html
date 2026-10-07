@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">fireSense_spreadPredict</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.1.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.0</span>
       </span>
     </div>
 
@@ -51,6 +51,16 @@
 
     </div>
 
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="1.2.0" id="firesense_spreadpredict-120">fireSense_spreadPredict 1.2.0<a class="anchor" aria-label="anchor" href="#firesense_spreadpredict-120"></a></h2>
+<p>This release lets fire spread be forecast across study areas that contain several fire regions, each with its own fitted model, with predictions blended smoothly across the boundaries between them. Each simulation replicate now uses one complete set of fitted values instead of an average of all of them, so the spread of results across replicates reflects the uncertainty in the fit. The fitted year-to-year variation in fire spread is passed on to the fire simulation.</p>
+<p>Forecasts now follow the same rules as the fit for young forest and for the types of models the fitting module can produce, and the module stops with a clear message when a fitted model and the forecast data do not match, instead of failing with a cryptic error. It is renamed <code>fireSense_spreadPredict</code> (lower-case “s”), so projects need to update the name they use for it.</p>
+</div>
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="1.1.4" id="firesense_spreadpredict-114">fireSense_spreadPredict 1.1.4<a class="anchor" aria-label="anchor" href="#firesense_spreadpredict-114"></a></h2>
+<ul><li>
+<code>lowerSpreadProb</code> and <code>maxFireSpread</code> default to <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/spreadProbBounds.html" class="external-link">fireSenseUtils::spreadProbFloor</a></code> (0.13) and <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/spreadProbBounds.html" class="external-link">fireSenseUtils::spreadProbCeiling</a></code> (0.276; <code>maxFireSpread</code> was 0.28), the one floor and ceiling <code>fireSense_spreadFit</code> and the objective use. <code>maxFireSpread</code> does not change a prediction. Needs the <code>fireSenseUtils</code> change in PredictiveEcology/fireSenseUtils (floor to be set once it has a version).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="page-header" data-toc-text="1.1.3" id="firesense_spreadpredict-113">fireSense_spreadPredict 1.1.3<a class="anchor" aria-label="anchor" href="#firesense_spreadpredict-113"></a></h2>
 <ul><li><p>A ledger row from a fit with an intercept (a parameter named <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/fireSenseUtils-constants.html" class="external-link">fireSenseUtils::spreadInterceptTxt</a></code>, from <code>fireSense_dataPrepFit</code>’s <code>spreadIntercept</code>) is predicted with it: <code><a href="../reference/spreadProbOneELF.html">spreadProbOneELF()</a></code> adds a column of 1s for it after rescaling and centring, and subtracts the row’s stored covariate centres (<code><a href="https://rdrr.io/pkg/fireSenseUtils/man/fireSenseUtils-constants.html" class="external-link">fireSenseUtils::spreadFitCovCentreTxt</a></code>, <code><a href="../reference/ledgerCovCentre.html">ledgerCovCentre()</a></code>) from the rescaled covariates, as the fit did. With several ELFs each row uses its own. A row without them, such as every row written so far, predicts exactly as before. Needs fireSenseUtils &gt;= 0.2.3.9083 (PredictiveEcology/fireSenseUtils#131).</p></li>

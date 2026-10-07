@@ -1,7 +1,7 @@
 ---
 title: "fireSense_spreadPredict Manual"
-subtitle: "v.1.1.3"
-date: "Last updated: 2026-10-05"
+subtitle: "v.1.2.0"
+date: "Last updated: 2026-10-07"
 output:
   bookdown::html_document2:
     toc: true
@@ -113,7 +113,7 @@ Summary of user-visible parameters (Table \@ref(tab:moduleParams-fireSense-sprea
    <td style="text-align:left;"> 0.13 </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Lower asymptote of the 2- and 3-parameter logistic. </td>
+   <td style="text-align:left;"> Lower asymptote of the 2- and 3-parameter logistic. Default `fireSenseUtils::spreadProbFloor`, the same constant `fireSense_spreadFit` fits with. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> ELFblendWidth </td>
@@ -126,10 +126,10 @@ Summary of user-visible parameters (Table \@ref(tab:moduleParams-fireSense-sprea
   <tr>
    <td style="text-align:left;"> maxFireSpread </td>
    <td style="text-align:left;"> numeric </td>
-   <td style="text-align:left;"> 0.28 </td>
+   <td style="text-align:left;"> 0.276 </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Upper limit on `spreadProb` used when fitting. Here it is only checked to be the same in every module that defines it. </td>
+   <td style="text-align:left;"> Upper limit on `spreadProb` used when fitting (default `fireSenseUtils::spreadProbCeiling`). Here it is only checked to be the same in every module that defines it. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .rep </td>
