@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">fireSense_spreadPredict</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.0.9000</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.0.9001</span>
       </span>
     </div>
 
@@ -99,7 +99,7 @@
 <div class="section level3">
 <h3 id="module-inputs-and-parameters">Module inputs and parameters<a class="anchor" aria-label="anchor" href="#module-inputs-and-parameters"></a>
 </h3>
-<p>Two objects from <em>fireSense_spreadFit</em> are read from the <code>simList</code> though they are not declared as inputs: <code>studyAreaWithSpreadParams</code> (the fitted parameters) and <code>fireSense_spreadFormula</code> (every term must be a column of <code>fireSense_SpreadCovariates</code>). The module stops if <code>studyAreaWithSpreadParams</code> has no parameters. <code>maxFireSpread</code> must have the same value in every module that defines it.</p>
+<p><code>studyAreaWithSpreadParams</code> (the fitted parameters, from <em>fireSense_spreadFit</em>) is read from the <code>simList</code> though it is not declared as an input. Prediction uses the covariates the fit has coefficients for, not the terms of <code>fireSense_spreadFormula</code>; each must be a column of <code>fireSense_SpreadCovariates</code>. The module stops if <code>studyAreaWithSpreadParams</code> has no parameters. <code>maxFireSpread</code> must have the same value in every module that defines it.</p>
 <p>Table @ref(tab:moduleInputs-fireSense-spreadPredict) shows the full list of module inputs.</p>
 <table class="table table" style="margin-left: auto; margin-right: auto;">
 <caption>
