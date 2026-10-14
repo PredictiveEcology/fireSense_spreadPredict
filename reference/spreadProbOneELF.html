@@ -61,11 +61,9 @@
 <span>  <span class="va">covs</span>,</span>
 <span>  <span class="va">params</span>,</span>
 <span>  <span class="va">covMinMax</span>,</span>
-<span>  <span class="va">formula</span>,</span>
 <span>  <span class="va">yr</span>,</span>
 <span>  <span class="va">maxFireSpread</span>,</span>
 <span>  <span class="va">lowerSpreadProb</span>,</span>
-<span>  byParams <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  covCentre <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -76,7 +74,8 @@
 
 <dl><dt id="arg-covs">covs<a class="anchor" aria-label="anchor" href="#arg-covs"></a></dt>
 <dd><p><code>data.table</code> of this ELF's pixels: <code>pixelID</code> and covariates (as <code>fireSense_dataPrepPredict</code>
-makes them; fuel biomass logged).</p></dd>
+makes them; fuel biomass logged). It can hold more than the fit used (every ELF's covariates, or a term the
+spread formula has but the fit does not); only the covariates named in <code>params</code> are used.</p></dd>
 
 
 <dt id="arg-params">params<a class="anchor" aria-label="anchor" href="#arg-params"></a></dt>
@@ -87,18 +86,9 @@ makes them; fuel biomass logged).</p></dd>
 <dd><p>the ELF's <code>covMinMax_spread</code>.</p></dd>
 
 
-<dt id="arg-formula">formula<a class="anchor" aria-label="anchor" href="#arg-formula"></a></dt>
-<dd><p>the spread formula, to check the covariates are all there.</p></dd>
-
-
 <dt id="arg-yr-maxfirespread-lowerspreadprob">yr, maxFireSpread, lowerSpreadProb<a class="anchor" aria-label="anchor" href="#arg-yr-maxfirespread-lowerspreadprob"></a></dt>
 <dd><p>as for <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/spreadProbFromIntegerCovs.html" class="external-link">fireSenseUtils::spreadProbFromIntegerCovs()</a></code> and
 <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/logistic.html" class="external-link">fireSenseUtils::logisticAll()</a></code>.</p></dd>
-
-
-<dt id="arg-byparams">byParams<a class="anchor" aria-label="anchor" href="#arg-byparams"></a></dt>
-<dd><p>logical; <code>TRUE</code> (several ELFs) ignores <code>formula</code>: the covariates are those named in
-<code>params</code>, and the table is cut to them, since it holds every ELF's covariates.</p></dd>
 
 
 <dt id="arg-covcentre">covCentre<a class="anchor" aria-label="anchor" href="#arg-covcentre"></a></dt>

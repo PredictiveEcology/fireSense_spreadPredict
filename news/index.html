@@ -53,7 +53,8 @@
 
     <div class="section level2">
 <h2 class="page-header" data-toc-text="development version" id="firesense_spreadpredict-development-version">fireSense_spreadPredict (development version)<a class="anchor" aria-label="anchor" href="#firesense_spreadpredict-development-version"></a></h2>
-</div>
+<ul><li>A single fitted ELF now predicts with the covariates its fitted parameters name, as several ELFs already did, not the terms of <code>sim$fireSense_spreadFormula</code>. A hindcast whose formula had a term the fit did not (e.g. <code>treedWetland_agb</code>) stopped with “not found in data objects”. Predictions where the formula matched the fit do not change. A fitted coefficient with no covariate still stops, naming it.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="page-header" data-toc-text="1.2.0" id="firesense_spreadpredict-120">fireSense_spreadPredict 1.2.0<a class="anchor" aria-label="anchor" href="#firesense_spreadpredict-120"></a></h2>
 <p>This release lets fire spread be forecast across study areas that contain several fire regions, each with its own fitted model, with predictions blended smoothly across the boundaries between them. Each simulation replicate now uses one complete set of fitted values instead of an average of all of them, so the spread of results across replicates reflects the uncertainty in the fit. The fitted year-to-year variation in fire spread is passed on to the fire simulation.</p>

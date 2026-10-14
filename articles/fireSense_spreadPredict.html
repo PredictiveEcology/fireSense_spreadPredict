@@ -73,7 +73,7 @@
       <h1 data-toc-skip>fireSense_spreadPredict Manual</h1>
             <h3 data-toc-skip class="subtitle">v.1.2.0.9000</h3>
             
-            <h4 data-toc-skip class="date">Last updated: 2026-10-07</h4>
+            <h4 data-toc-skip class="date">Last updated: 2026-10-14</h4>
       
 
       <div class="hidden name"><code>fireSense_spreadPredict.Rmd</code></div>
@@ -112,7 +112,7 @@
 <div class="section level4">
 <h4 id="module-inputs-and-parameters">Module inputs and parameters<a class="anchor" aria-label="anchor" href="#module-inputs-and-parameters"></a>
 </h4>
-<p>Two objects from <em>fireSense_spreadFit</em> are read from the <code>simList</code> though they are not declared as inputs: <code>studyAreaWithSpreadParams</code> (the fitted parameters) and <code>fireSense_spreadFormula</code> (every term must be a column of <code>fireSense_SpreadCovariates</code>).
+<p><code>studyAreaWithSpreadParams</code> (the fitted parameters, from <em>fireSense_spreadFit</em>) is read from the <code>simList</code> though it is not declared as an input. Prediction uses the covariates the fit has coefficients for, not the terms of <code>fireSense_spreadFormula</code>; each must be a column of <code>fireSense_SpreadCovariates</code>.
 The module stops if <code>studyAreaWithSpreadParams</code> has no parameters.
 <code>maxFireSpread</code> must have the same value in every module that defines it.</p>
 <p>Table <a href="#tab:moduleInputs-fireSense-spreadPredict">1</a> shows the full list of module inputs.</p>
