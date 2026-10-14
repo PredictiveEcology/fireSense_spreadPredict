@@ -1,7 +1,7 @@
 ---
 title: "fireSense_spreadPredict Manual"
 subtitle: "v.1.2.0.9000"
-date: "Last updated: 2026-10-07"
+date: "Last updated: 2026-10-14"
 output:
   bookdown::html_document2:
     toc: true
@@ -45,7 +45,7 @@ Each year, predicts a raster of fire spread probabilities from the parameters fi
 
 ### Module inputs and parameters
 
-Two objects from *fireSense_spreadFit* are read from the `simList` though they are not declared as inputs: `studyAreaWithSpreadParams` (the fitted parameters) and `fireSense_spreadFormula` (every term must be a column of `fireSense_SpreadCovariates`).
+`studyAreaWithSpreadParams` (the fitted parameters, from *fireSense_spreadFit*) is read from the `simList` though it is not declared as an input. Prediction uses the covariates the fit has coefficients for, not the terms of `fireSense_spreadFormula`; each must be a column of `fireSense_SpreadCovariates`.
 The module stops if `studyAreaWithSpreadParams` has no parameters.
 `maxFireSpread` must have the same value in every module that defines it.
 
