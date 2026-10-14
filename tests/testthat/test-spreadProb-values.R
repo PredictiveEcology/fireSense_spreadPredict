@@ -140,12 +140,12 @@ test_that("maxFireSpread does not change the prediction", {
   expect_equal(a[4], 0.2491969, tolerance = 1e-6) # above 0.20: not capped
 })
 
-test_that("a covariate with no fitted coefficient is dropped with a warning", {
+test_that("a covariate with no fitted coefficient is not used", {
   covs <- toyCovariates()
   data.table::set(covs, NULL, "fuelB", 5)
   ins <- toyInputs(covs = covs)
   ins$covMinMax_spread$fuelB <- c(0, 10)
-  expect_warning(sim <- toyRun(ins), "fuelB\\s+\\.\\.\\.that are not in the sim\\$studyAreaWithSpreadParams")
+  expect_no_warning(sim <- toyRun(ins))
   ## fuelB contributes nothing
   expect_equal(predVals(sim)[c(1, 3)], c(0.19, 0.2408970), tolerance = 1e-6)
 })

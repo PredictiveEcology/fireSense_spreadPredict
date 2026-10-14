@@ -152,7 +152,7 @@ spreadPredictRun <- function(sim) {
   if (NROW(sa) == 1L) {
     params1 <- paramSetForRep(sa$params[[1]], P(sim)$.rep)
     pred <- spreadProbOneELF(covs, params = params1, covMinMax = sim$covMinMax_spread,
-                             formula = sim$fireSense_spreadFormula, yr = time(sim),
+                             yr = time(sim),
                              maxFireSpread = P(sim)$maxFireSpread, lowerSpreadProb = P(sim)$lowerSpreadProb,
                              covCentre = ledgerCovCentre(sa, 1L))
     sim$fireSense_SpreadSD <- yearSpreadSDOf(params1)
@@ -173,8 +173,8 @@ spreadPredictRun <- function(sim) {
       if (!length(these)) next
       parsI <- paramSetForRep(sa$params[[i]], P(sim)$.rep)
       p <- spreadProbOneELF(covs[these], params = parsI, covMinMax = sa$covMinMax_spread[[i]],
-                            formula = NULL, yr = time(sim), maxFireSpread = P(sim)$maxFireSpread,
-                            lowerSpreadProb = P(sim)$lowerSpreadProb, byParams = TRUE,
+                            yr = time(sim), maxFireSpread = P(sim)$maxFireSpread,
+                            lowerSpreadProb = P(sim)$lowerSpreadProb,
                             covCentre = ledgerCovCentre(sa, i))
       rows <- these[match(p$pixelID, covs$pixelID[these])]
       acc[rows] <- acc[rows] + w[rows, i] * p$spreadProb
@@ -236,12 +236,10 @@ ELFblendWeights <- function(elfRas, template, pixelID, ids, width) {
 #' Spread probability for the pixels of one ELF
 #'
 #' @param covs `data.table` of this ELF's pixels: `pixelID` and covariates (as `fireSense_dataPrepPredict`
-#'   makes them; fuel biomass logged).
+#'   makes them; fuel biomass logged). It can hold more than the fit used (every ELF's covariates, or a term the
+#'   spread formula has but the fit does not); only the covariates named in `params` are used.
 #' @param params one-row `data.frame`: the ELF's parameter set for this replicate (`paramSetForRep()`).
 #' @param covMinMax the ELF's `covMinMax_spread`.
-#' @param formula the spread formula, to check the covariates are all there.
-#' @param byParams logical; `TRUE` (several ELFs) ignores `formula`: the covariates are those named in
-#'   `params`, and the table is cut to them, since it holds every ELF's covariates.
 #' @param yr,maxFireSpread,lowerSpreadProb as for `fireSenseUtils::spreadProbFromIntegerCovs()` and
 #'   `fireSenseUtils::logisticAll()`.
 #' @param covCentre the ELF's `covCentre_spread` (`ledgerCovCentre()`): the covariate means the fit subtracted
@@ -249,8 +247,8 @@ ELFblendWeights <- function(elfRas, template, pixelID, ids, width) {
 #'   A parameter set with `fireSenseUtils::spreadInterceptTxt` has an intercept, added as a column of 1s after
 #'   the covariates are rescaled and centred, as in the fit.
 #' @return `data.table` with `pixelID` and `spreadProb`, from the one parameter set in `params`.
-spreadProbOneELF <- function(covs, params, covMinMax, formula, yr, maxFireSpread, lowerSpreadProb,
-                             byParams = FALSE, covCentre = NULL) {
+spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSpreadProb,
+                             covCentre = NULL) {
   moduleName <- "fireSense_spreadPredict"
   covs <- copy(covs)
   ## the per-year random effect is not a covariate coefficient: fireSense_burn applies it (fireSense_SpreadSD)
@@ -286,23 +284,9 @@ spreadProbOneELF <- function(covs, params, covMinMax, formula, yr, maxFireSpread
     )
   }
 
-  ## the covariates this ELF was fitted with
-  needed <- if (isTRUE(byParams)) {
-    fitted
-  } else {
-    terms <- delete.response(terms.formula(as.formula(formula)))
-    all.vars(reformulate(attr(terms, "term.labels"), intercept = attr(terms, "intercept")))
-  }
-  missing <- !needed %in% names(covs)
-  if (s <- sum(missing)) {
-    stop(
-      moduleName, "> '", needed[missing][1L], "'",
-      if (s > 1) paste0(" (and ", s - 1L, " other", if (s > 2) "s", ")"),
-      " not found in data objects."
-    )
-  }
-  ## with several ELFs the table holds every ELF's covariates; use this ELF's only
-  if (isTRUE(byParams)) covs <- covs[, c("pixelID", needed), with = FALSE]
+  ## the covariates this ELF was fitted with, not the spread formula's terms: they can differ (a hindcast
+  ## rebuilds the formula from another year's land cover), and `covs` can hold more than this ELF's
+  covs <- covs[, c("pixelID", fitted), with = FALSE]
 
   # integers x 1000, the form `spreadProbFromIntegerCovs` expects
   shortAnnDTx1000 <- toX1000(list(covs))[[1]] |> setDT()
@@ -340,11 +324,6 @@ spreadProbOneELF <- function(covs, params, covMinMax, formula, yr, maxFireSpread
   logisticPars <- par[setdiff(names(par), names(covPars))]
   # Make sure the order is correct in the matrix
   matching <- intersect(names(covPars), colnames(mat))
-  missingCovs <- setdiff(colnames(mat), names(covPars))
-  if (length(missingCovs))
-    warning("There are covariates in the sim$fireSense_SpreadCovariates: \n",
-            paste0(missingCovs, collapse = ", "),
-            "\n...that are not in the sim$studyAreaWithSpreadParams")
 
   data.table(pixelID = shortAnnDT$pixelID,
              spreadProb = logisticAll(logisticPars, mat[, matching, drop = FALSE], covPars, lowerSpreadProb))
