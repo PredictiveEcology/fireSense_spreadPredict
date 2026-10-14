@@ -79,7 +79,7 @@ probability with ONE parameter set (row) of the fit, chosen by the <code>.rep</c
     <div id="details">
     <h2>Details</h2>
     <p>With one fitted ELF (one row of <code>sim$studyAreaWithSpreadParams</code>) every pixel uses its parameters and
-<code>sim$covMinMax_spread</code>. With several, each ELF's model (its parameter set, its <code>covMinMax_spread</code>, and
+its <code>covMinMax_spread</code> (<code><a href="ledgerCovMinMax.html">ledgerCovMinMax()</a></code>; <code>sim$covMinMax_spread</code> only when the row has none). With several, each ELF's model (its parameter set, its <code>covMinMax_spread</code>, and
 only the covariates it was fitted with) predicts its own pixels, from <code>sim$rasterToMatchLargeELF</code>, and
 those within <code>ELFblendWidth</code> of them; overlapping predictions are averaged with the weights of
 <code><a href="ELFblendWeights.html">ELFblendWeights()</a></code>.</p>

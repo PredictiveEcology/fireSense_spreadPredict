@@ -53,7 +53,8 @@
 
     <div class="section level2">
 <h2 class="page-header" data-toc-text="development version" id="firesense_spreadpredict-development-version">fireSense_spreadPredict (development version)<a class="anchor" aria-label="anchor" href="#firesense_spreadpredict-development-version"></a></h2>
-<ul><li>A single fitted ELF now predicts with the covariates its fitted parameters name, as several ELFs already did, not the terms of <code>sim$fireSense_spreadFormula</code>. A hindcast whose formula had a term the fit did not (e.g. <code>treedWetland_agb</code>) stopped with “not found in data objects”. Predictions where the formula matched the fit do not change. A fitted coefficient with no covariate still stops, naming it.</li>
+<ul><li><p>A single fitted ELF now rescales its covariates with the <code>covMinMax_spread</code> of its ledger row, as several ELFs already did, not with <code>sim$covMinMax_spread</code>, which <code>fireSense_spreadFit</code> rebuilds in every run from that run’s tables (in a hindcast, from a formula rebuilt for another year, which can lack a fitted term). A row without ranges (an older ledger) still uses <code>sim$covMinMax_spread</code>. A fitted covariate with no range now stops, naming it; before, it silently stayed on its raw scale.</p></li>
+<li><p>A single fitted ELF now predicts with the covariates its fitted parameters name, as several ELFs already did, not the terms of <code>sim$fireSense_spreadFormula</code>. A hindcast whose formula had a term the fit did not (e.g. <code>treedWetland_agb</code>) stopped with “not found in data objects”. Predictions where the formula matched the fit do not change. A fitted coefficient with no covariate still stops, naming it.</p></li>
 </ul></div>
     <div class="section level2">
 <h2 class="page-header" data-toc-text="1.2.0" id="firesense_spreadpredict-120">fireSense_spreadPredict 1.2.0<a class="anchor" aria-label="anchor" href="#firesense_spreadpredict-120"></a></h2>
