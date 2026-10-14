@@ -1,5 +1,7 @@
 # fireSense_spreadPredict (development version)
 
+- A single fitted ELF now rescales its covariates with the `covMinMax_spread` of its ledger row, as several ELFs already did, not with `sim$covMinMax_spread`, which `fireSense_spreadFit` rebuilds in every run from that run's tables (in a hindcast, from a formula rebuilt for another year, which can lack a fitted term). A row without ranges (an older ledger) still uses `sim$covMinMax_spread`. A fitted covariate with no range now stops, naming it; before, it silently stayed on its raw scale.
+
 - A single fitted ELF now predicts with the covariates its fitted parameters name, as several ELFs already did, not the terms of `sim$fireSense_spreadFormula`. A hindcast whose formula had a term the fit did not (e.g. `treedWetland_agb`) stopped with "not found in data objects". Predictions where the formula matched the fit do not change. A fitted coefficient with no covariate still stops, naming it.
 
 # fireSense_spreadPredict 1.2.0

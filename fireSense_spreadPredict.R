@@ -126,7 +126,7 @@ doEvent.fireSense_spreadPredict <- function(sim, eventTime, eventType, debug = F
 #' `paramSetForRep()`), and writes it to `sim$fireSense_SpreadPredicted`. Parameter sets are not averaged.
 #'
 #' With one fitted ELF (one row of `sim$studyAreaWithSpreadParams`) every pixel uses its parameters and
-#' `sim$covMinMax_spread`. With several, each ELF's model (its parameter set, its `covMinMax_spread`, and
+#' its `covMinMax_spread` (`ledgerCovMinMax()`; `sim$covMinMax_spread` only when the row has none). With several, each ELF's model (its parameter set, its `covMinMax_spread`, and
 #' only the covariates it was fitted with) predicts its own pixels, from `sim$rasterToMatchLargeELF`, and
 #' those within `ELFblendWidth` of them; overlapping predictions are averaged with the weights of
 #' `ELFblendWeights()`.
@@ -151,7 +151,7 @@ spreadPredictRun <- function(sim) {
 
   if (NROW(sa) == 1L) {
     params1 <- paramSetForRep(sa$params[[1]], P(sim)$.rep)
-    pred <- spreadProbOneELF(covs, params = params1, covMinMax = sim$covMinMax_spread,
+    pred <- spreadProbOneELF(covs, params = params1, covMinMax = ledgerCovMinMax(sa, 1L, sim$covMinMax_spread),
                              yr = time(sim),
                              maxFireSpread = P(sim)$maxFireSpread, lowerSpreadProb = P(sim)$lowerSpreadProb,
                              covCentre = ledgerCovCentre(sa, 1L))
@@ -239,7 +239,8 @@ ELFblendWeights <- function(elfRas, template, pixelID, ids, width) {
 #'   makes them; fuel biomass logged). It can hold more than the fit used (every ELF's covariates, or a term the
 #'   spread formula has but the fit does not); only the covariates named in `params` are used.
 #' @param params one-row `data.frame`: the ELF's parameter set for this replicate (`paramSetForRep()`).
-#' @param covMinMax the ELF's `covMinMax_spread`.
+#' @param covMinMax the ELF's `covMinMax_spread` (`ledgerCovMinMax()`): the ranges the fit rescaled its
+#'   covariates with. Every fitted covariate must be a column of it, or it is left unscaled.
 #' @param yr,maxFireSpread,lowerSpreadProb as for `fireSenseUtils::spreadProbFromIntegerCovs()` and
 #'   `fireSenseUtils::logisticAll()`.
 #' @param covCentre the ELF's `covCentre_spread` (`ledgerCovCentre()`): the covariate means the fit subtracted
@@ -287,6 +288,13 @@ spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSp
   ## the covariates this ELF was fitted with, not the spread formula's terms: they can differ (a hindcast
   ## rebuilds the formula from another year's land cover), and `covs` can hold more than this ELF's
   covs <- covs[, c("pixelID", fitted), with = FALSE]
+  ## spreadProbFromIntegerCovs() rescales only the columns of covMinMax: a fitted covariate it lacks would
+  ## silently stay on its raw scale (x1000)
+  noRange <- setdiff(fitted, names(covMinMax))
+  if (length(noRange))
+    stop(moduleName, "> covMinMax_spread has no range for the fitted covariate(s) ",
+         paste(noRange, collapse = ", "), "; it has ", paste(names(covMinMax), collapse = ", "),
+         ". The ranges must be the fit's (its ledger row).")
 
   # integers x 1000, the form `spreadProbFromIntegerCovs` expects
   shortAnnDTx1000 <- toX1000(list(covs))[[1]] |> setDT()
@@ -330,6 +338,24 @@ spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSp
 }
 
 yearSpreadSDTxt <- "yearSpreadSD"
+
+#' The covariate ranges of one ledger row
+#'
+#' A fit rescales its covariates with fixed ranges and stores them in its ledger row (`covMinMax_spread`).
+#' Prediction rescales with the same values, so it never depends on `sim$covMinMax_spread`, which
+#' `fireSense_spreadFit` rebuilds in every run from that run's own covariate tables (in a hindcast, from a
+#' formula rebuilt for another year, which can lack a fitted term).
+#'
+#' @param sa `sim$studyAreaWithSpreadParams`, one row per ELF.
+#' @param i integer; the row.
+#' @param default what to return for a row without ranges (an older ledger row): `sim$covMinMax_spread`.
+#' @return The row's `covMinMax_spread` (a `data.table`, 2 rows: min, max), else `default`.
+ledgerCovMinMax <- function(sa, i, default = NULL) {
+  if (!"covMinMax_spread" %in% names(sa)) return(default)
+  cmm <- sa[["covMinMax_spread"]][[i]]
+  if (is.null(cmm) || !NROW(cmm)) return(default)
+  cmm
+}
 
 #' The covariate centres of one ledger row
 #'
