@@ -17,7 +17,7 @@ defineModule(sim, list(
   documentation = list("README.txt", "fireSense_spreadPredict.Rmd"),
   reqdPkgs = list("data.table", "magrittr", "Matrix", "methods", "terra", "SpaDES.core (>=3.0.4)", "stats",
                   "ggplot2", "viridis",
-                  "PredictiveEcology/fireSenseUtils@development (>= 0.2.3.9084)"),
+                  "PredictiveEcology/fireSenseUtils@development (>= 0.2.3.9106)"),
   parameters = bindrows(
     defineParameter(name = "lowerSpreadProb", class = "numeric", default = fireSenseUtils::spreadProbFloor,
                     desc = paste("Lower asymptote of the 2- and 3-parameter logistic. Default",
@@ -154,7 +154,7 @@ spreadPredictRun <- function(sim) {
     pred <- spreadProbOneELF(covs, params = params1, covMinMax = ledgerCovMinMax(sa, 1L, sim$covMinMax_spread),
                              yr = time(sim),
                              maxFireSpread = P(sim)$maxFireSpread, lowerSpreadProb = P(sim)$lowerSpreadProb,
-                             covCentre = ledgerCovCentre(sa, 1L))
+                             covCentre = ledgerCovCentre(sa, 1L), climateRef = ledgerClimateRef(sa, 1L))
     sim$fireSense_SpreadSD <- yearSpreadSDOf(params1)
   } else {
     ids <- as.character(sa[[fireSenseUtils::polygonIDTxt]])
@@ -175,7 +175,7 @@ spreadPredictRun <- function(sim) {
       p <- spreadProbOneELF(covs[these], params = parsI, covMinMax = sa$covMinMax_spread[[i]],
                             yr = time(sim), maxFireSpread = P(sim)$maxFireSpread,
                             lowerSpreadProb = P(sim)$lowerSpreadProb,
-                            covCentre = ledgerCovCentre(sa, i))
+                            covCentre = ledgerCovCentre(sa, i), climateRef = ledgerClimateRef(sa, i))
       rows <- these[match(p$pixelID, covs$pixelID[these])]
       acc[rows] <- acc[rows] + w[rows, i] * p$spreadProb
       accSD[rows] <- accSD[rows] + w[rows, i] * yearSpreadSDOf(parsI)
@@ -247,9 +247,13 @@ ELFblendWeights <- function(elfRas, template, pixelID, ids, width) {
 #'   from the rescaled covariates; `NULL` (a fit without an intercept, or an older ledger row) centres nothing.
 #'   A parameter set with `fireSenseUtils::spreadInterceptTxt` has an intercept, added as a column of 1s after
 #'   the covariates are rescaled and centred, as in the fit.
+#' @param climateRef the ELF's `climateRef_spread` (`ledgerClimateRef()`): with a fit made with climate outside the
+#'   `maxAsymptote` ceiling (`fireSense_spreadFit`'s `spreadLink = "climateOutside"`), the reference value of each
+#'   climate covariate; `fireSenseUtils::spreadProbFromCovs()` then applies that link, exactly as the fit did.
+#'   `NULL` (a fit with climate under the ceiling, or an older ledger row) is the link as it always was.
 #' @return `data.table` with `pixelID` and `spreadProb`, from the one parameter set in `params`.
 spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSpreadProb,
-                             covCentre = NULL) {
+                             covCentre = NULL, climateRef = NULL) {
   moduleName <- "fireSense_spreadPredict"
   covs <- copy(covs)
   ## the per-year random effect is not a covariate coefficient: fireSense_burn applies it (fireSense_SpreadSD)
@@ -333,8 +337,10 @@ spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSp
   # Make sure the order is correct in the matrix
   matching <- intersect(names(covPars), colnames(mat))
 
+  ## the one function the fit computes its spread probability with, so the prediction cannot differ from it
   data.table(pixelID = shortAnnDT$pixelID,
-             spreadProb = logisticAll(logisticPars, mat[, matching, drop = FALSE], covPars, lowerSpreadProb))
+             spreadProb = spreadProbFromCovs(mat[, matching, drop = FALSE], logisticPars, covPars, lowerSpreadProb,
+                                             climateRef = climateRef))
 }
 
 yearSpreadSDTxt <- "yearSpreadSD"
@@ -355,6 +361,24 @@ ledgerCovMinMax <- function(sa, i, default = NULL) {
   cmm <- sa[["covMinMax_spread"]][[i]]
   if (is.null(cmm) || !NROW(cmm)) return(default)
   cmm
+}
+
+#' The climate reference of one ledger row
+#'
+#' A fit made with climate outside the `maxAsymptote` ceiling (`fireSense_spreadFit`'s `spreadLink = "climateOutside"`)
+#' stores the reference value of each climate covariate in the ledger row (`fireSenseUtils::spreadFitClimateRefTxt`),
+#' with `spreadLink` beside it. Prediction applies the same link with the same reference
+#' (`fireSenseUtils::spreadProbFromCovs()`).
+#'
+#' @param sa `sim$studyAreaWithSpreadParams`, one row per ELF.
+#' @param i integer; the row.
+#' @return A named list, or `NULL` for a row without a reference: a fit with climate under the ceiling, or a row
+#'   written before the link existed. Such a row predicts exactly as it always did.
+ledgerClimateRef <- function(sa, i) {
+  col <- fireSenseUtils::spreadFitClimateRefTxt
+  if (!col %in% names(sa)) return(NULL)
+  ref <- sa[[col]][[i]]
+  if (is.list(ref) && length(ref)) ref else NULL
 }
 
 #' The covariate centres of one ledger row
