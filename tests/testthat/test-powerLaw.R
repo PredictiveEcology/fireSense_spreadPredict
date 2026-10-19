@@ -71,15 +71,34 @@ test_that("with several ELFs each row applies its own link, blended like the pro
   expect_equal(v[10], pB, tolerance = 1e-9)
 })
 
-test_that("a powerLaw row with a year effect warns, once, that fireSense_burn adds it on the logit", {
-  ins <- inputsPL()
+test_that("a powerLaw row hands fireSense_burn pc, gamma and floor, so it can add the year effect to x", {
+  ins <- inputsPL(gamma = 3)
   ins$studyAreaWithSpreadParams$params <- lapply(ins$studyAreaWithSpreadParams$params, function(p) { p$yearSpreadSD <- 0.3; p })
-  expect_warning(sim <- toyRun(ins), "fireSense_burn adds fireSense_SpreadSD on the")
-  expect_equal(predVals(sim)[cellsPL], pHandPL(1.9), tolerance = 1e-9)
+  expect_no_warning(sim <- toyRun(ins))
+  expect_equal(predVals(sim)[cellsPL], pHandPL(3), tolerance = 1e-9)
   expect_equal(sim$fireSense_SpreadSD, 0.3)
-  ## no warning without a year effect, or with the default link
-  expect_no_warning(toyRun(inputsPL()))
-  ins2 <- toyInputs()
-  ins2$studyAreaWithSpreadParams$params <- lapply(ins2$studyAreaWithSpreadParams$params, function(p) { p$yearSpreadSD <- 0.3; p })
-  expect_no_warning(toyRun(ins2))
+  expect_identical(sim$fireSense_SpreadPowerLaw, c(pc = 0.25, gamma = 3, floor = 0.13))
+  ## any other link: nothing for fireSense_burn, which keeps the year effect on the logit
+  expect_null(toyRun(inputsPL(gamma = NULL, link = NULL))$fireSense_SpreadPowerLaw)
+  expect_null(toyRun(inputsPL(gamma = 4, link = "ceiling"))$fireSense_SpreadPowerLaw)
+})
+
+test_that("with several ELFs fireSense_SpreadPowerLaw is blended like the probabilities", {
+  ins <- multiInputs()
+  ins$studyAreaWithSpreadParams$params <- lapply(ins$studyAreaWithSpreadParams$params, function(p) { p$MDC <- 1; p })
+  ins$studyAreaWithSpreadParams[[linkColPL]] <- c("powerLaw", "powerLaw")
+  ins$studyAreaWithSpreadParams[[gammaColPL]] <- c(2, 4)
+  pl <- toyRun(ins, params = list(ELFblendWidth = 20000))$fireSense_SpreadPowerLaw
+  expect_s4_class(pl, "SpatRaster")
+  expect_identical(names(pl), c("pc", "gamma", "floor"))
+  g <- terra::values(pl[["gamma"]], mat = FALSE)
+  expect_equal(g[1], 2); expect_equal(g[10], 4)                 # each ELF's own gamma, in its own interior
+  expect_true(all(g >= 2 & g <= 4, na.rm = TRUE))
+  expect_equal(terra::values(pl[["floor"]], mat = FALSE), rep(0.13, 10))
+  ins$studyAreaWithSpreadParams[[linkColPL]] <- c("powerLaw", "ceiling")
+  ins$studyAreaWithSpreadParams[[gammaColPL]] <- c(2, NA)
+  ## one power-law ELF and one other: the parameters are NA where only the other ELF predicts (burn then uses the logit)
+  pl2 <- toyRun(ins, params = list(ELFblendWidth = 20000))$fireSense_SpreadPowerLaw
+  g2 <- terra::values(pl2[["gamma"]], mat = FALSE)
+  expect_equal(g2[1], 2); expect_true(is.na(g2[10]))
 })

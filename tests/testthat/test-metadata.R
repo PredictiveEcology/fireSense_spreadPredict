@@ -29,7 +29,8 @@ test_that("outputs are the expected names and classes", {
   outputs <- stats::setNames(md$outputObjects$objectClass, md$outputObjects$objectName)
   expect_identical(
     outputs[order(names(outputs))],
-    c(fireSense_SpreadPredicted = "SpatRaster", fireSense_SpreadSD = "SpatRaster|numeric")
+    c(fireSense_SpreadPowerLaw = "SpatRaster|numeric", fireSense_SpreadPredicted = "SpatRaster",
+      fireSense_SpreadSD = "SpatRaster|numeric")
   )
 })
 
