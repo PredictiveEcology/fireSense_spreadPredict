@@ -17,7 +17,7 @@ defineModule(sim, list(
   documentation = list("README.txt", "fireSense_spreadPredict.Rmd"),
   reqdPkgs = list("data.table", "magrittr", "Matrix", "methods", "terra", "SpaDES.core (>=3.0.4)", "stats",
                   "ggplot2", "viridis",
-                  "PredictiveEcology/fireSenseUtils@development (>= 0.2.3.9106)"),
+                  "PredictiveEcology/fireSenseUtils@development (>= 0.2.3.9107)"),
   parameters = bindrows(
     defineParameter(name = "lowerSpreadProb", class = "numeric", default = fireSenseUtils::spreadProbFloor,
                     desc = paste("Lower asymptote of the 2- and 3-parameter logistic. Default",
@@ -151,10 +151,13 @@ spreadPredictRun <- function(sim) {
 
   if (NROW(sa) == 1L) {
     params1 <- paramSetForRep(sa$params[[1]], P(sim)$.rep)
+    gamma1 <- ledgerPowerLawGamma(sa, 1L)
+    warnPowerLawYearEffect(gamma1, params1)
     pred <- spreadProbOneELF(covs, params = params1, covMinMax = ledgerCovMinMax(sa, 1L, sim$covMinMax_spread),
                              yr = time(sim),
                              maxFireSpread = P(sim)$maxFireSpread, lowerSpreadProb = P(sim)$lowerSpreadProb,
-                             covCentre = ledgerCovCentre(sa, 1L), climateRef = ledgerClimateRef(sa, 1L))
+                             covCentre = ledgerCovCentre(sa, 1L), climateRef = ledgerClimateRef(sa, 1L),
+                             powerLawGamma = gamma1)
     sim$fireSense_SpreadSD <- yearSpreadSDOf(params1)
   } else {
     ids <- as.character(sa[[fireSenseUtils::polygonIDTxt]])
@@ -172,10 +175,13 @@ spreadPredictRun <- function(sim) {
       these <- which(w[, i] > 0)
       if (!length(these)) next
       parsI <- paramSetForRep(sa$params[[i]], P(sim)$.rep)
+      gammaI <- ledgerPowerLawGamma(sa, i)
+      warnPowerLawYearEffect(gammaI, parsI)
       p <- spreadProbOneELF(covs[these], params = parsI, covMinMax = sa$covMinMax_spread[[i]],
                             yr = time(sim), maxFireSpread = P(sim)$maxFireSpread,
                             lowerSpreadProb = P(sim)$lowerSpreadProb,
-                            covCentre = ledgerCovCentre(sa, i), climateRef = ledgerClimateRef(sa, i))
+                            covCentre = ledgerCovCentre(sa, i), climateRef = ledgerClimateRef(sa, i),
+                            powerLawGamma = gammaI)
       rows <- these[match(p$pixelID, covs$pixelID[these])]
       acc[rows] <- acc[rows] + w[rows, i] * p$spreadProb
       accSD[rows] <- accSD[rows] + w[rows, i] * yearSpreadSDOf(parsI)
@@ -251,9 +257,13 @@ ELFblendWeights <- function(elfRas, template, pixelID, ids, width) {
 #'   `maxAsymptote` ceiling (`fireSense_spreadFit`'s `spreadLink = "climateOutside"`), the reference value of each
 #'   climate covariate; `fireSenseUtils::spreadProbFromCovs()` then applies that link, exactly as the fit did.
 #'   `NULL` (a fit with climate under the ceiling, or an older ledger row) is the link as it always was.
+#' @param powerLawGamma the ELF's `powerLawGamma_spread` (`ledgerPowerLawGamma()`): with a fit made with
+#'   `fireSense_spreadFit`'s `spreadLink = "powerLaw"`, its `gamma`; `fireSenseUtils::spreadProbFromCovs()` then
+#'   applies that link (`fireSenseUtils::powerLawLink()`, with `maxAsymptote` as `p_c`), exactly as the fit did.
+#'   `NULL` (any other link) is the link as it always was.
 #' @return `data.table` with `pixelID` and `spreadProb`, from the one parameter set in `params`.
 spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSpreadProb,
-                             covCentre = NULL, climateRef = NULL) {
+                             covCentre = NULL, climateRef = NULL, powerLawGamma = NULL) {
   moduleName <- "fireSense_spreadPredict"
   covs <- copy(covs)
   ## the per-year random effect is not a covariate coefficient: fireSense_burn applies it (fireSense_SpreadSD)
@@ -340,10 +350,30 @@ spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSp
   ## the one function the fit computes its spread probability with, so the prediction cannot differ from it
   data.table(pixelID = shortAnnDT$pixelID,
              spreadProb = spreadProbFromCovs(mat[, matching, drop = FALSE], logisticPars, covPars, lowerSpreadProb,
-                                             climateRef = climateRef))
+                                             link = if (!is.null(powerLawGamma)) "powerLaw",
+                                             climateRef = climateRef, powerLawGamma = powerLawGamma))
 }
 
 yearSpreadSDTxt <- "yearSpreadSD"
+
+#' Warn, once, that `fireSense_burn` adds the year effect on the wrong scale for a power-law fit
+#'
+#' A fit made with `spreadLink = "powerLaw"` adds its year effect (`yearSpreadSD`) to the linear predictor, not to
+#' the logit of `p`; `fireSense_burn` adds `fireSense_SpreadSD` on the logit, so with a power-law fit and a
+#' `yearSpreadSD` above 0 the simulated years are not those of the fit.
+#'
+#' @param powerLawGamma the row's `gamma` (`ledgerPowerLawGamma()`); `NULL` for another link.
+#' @param params one-row `data.frame`: the parameter set in use (`paramSetForRep()`).
+#' @return `NULL`, invisibly.
+warnPowerLawYearEffect <- function(powerLawGamma, params) {
+  if (!is.null(powerLawGamma) && yearSpreadSDOf(params) > 0 && !isTRUE(mod$warnedPowerLawYearEffect)) {
+    mod$warnedPowerLawYearEffect <- TRUE
+    warning("fireSense_spreadPredict: this ledger row is a spreadLink = 'powerLaw' fit with yearSpreadSD > 0; ",
+            "the fit adds the year effect to the linear predictor, but fireSense_burn adds fireSense_SpreadSD on the ",
+            "logit of the spread probability, so simulated years will differ from the fit's.", call. = FALSE)
+  }
+  invisible(NULL)
+}
 
 #' The covariate ranges of one ledger row
 #'
@@ -379,6 +409,26 @@ ledgerClimateRef <- function(sa, i) {
   if (!col %in% names(sa)) return(NULL)
   ref <- sa[[col]][[i]]
   if (is.list(ref) && length(ref)) ref else NULL
+}
+
+#' The power-law exponent of one ledger row
+#'
+#' A fit made with `fireSense_spreadFit`'s `spreadLink = "powerLaw"` stores its `gamma` in the ledger row
+#' (`fireSenseUtils::spreadFitPowerLawGammaTxt`), with `"powerLaw"` in `fireSenseUtils::spreadLinkTxt`. Prediction
+#' applies the same link with the same `gamma` (`fireSenseUtils::spreadProbFromCovs()`).
+#'
+#' @param sa `sim$studyAreaWithSpreadParams`, one row per ELF.
+#' @param i integer; the row.
+#' @return `gamma`, or `NULL` for a row of any other link, such as every row written before the link existed. Such
+#'   a row predicts exactly as it always did. A `"powerLaw"` row without a valid `gamma` stops.
+ledgerPowerLawGamma <- function(sa, i) {
+  linkCol <- fireSenseUtils::spreadLinkTxt
+  if (!linkCol %in% names(sa) || !identical(as.character(sa[[linkCol]][[i]]), "powerLaw")) return(NULL)
+  gamma <- sa[[fireSenseUtils::spreadFitPowerLawGammaTxt]][[i]]
+  if (!(is.numeric(gamma) && length(gamma) == 1L && is.finite(gamma) && gamma > 0))
+    stop("fireSense_spreadPredict: ledger row ", i, " has spreadLink 'powerLaw' but no valid '",
+         fireSenseUtils::spreadFitPowerLawGammaTxt, "' (", format(gamma), ")", call. = FALSE)
+  gamma
 }
 
 #' The covariate centres of one ledger row
