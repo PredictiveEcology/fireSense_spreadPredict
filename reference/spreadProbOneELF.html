@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">fireSense_spreadPredict</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.0.9001</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.0.9003</span>
       </span>
     </div>
 
@@ -64,7 +64,9 @@
 <span>  <span class="va">yr</span>,</span>
 <span>  <span class="va">maxFireSpread</span>,</span>
 <span>  <span class="va">lowerSpreadProb</span>,</span>
-<span>  covCentre <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  covCentre <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  climateRef <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  powerLawGamma <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -97,6 +99,20 @@ covariates with. Every fitted covariate must be a column of it, or it is left un
 from the rescaled covariates; <code>NULL</code> (a fit without an intercept, or an older ledger row) centres nothing.
 A parameter set with <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/fireSenseUtils-constants.html" class="external-link">fireSenseUtils::spreadInterceptTxt</a></code> has an intercept, added as a column of 1s after
 the covariates are rescaled and centred, as in the fit.</p></dd>
+
+
+<dt id="arg-climateref">climateRef<a class="anchor" aria-label="anchor" href="#arg-climateref"></a></dt>
+<dd><p>the ELF's <code>climateRef_spread</code> (<code><a href="ledgerClimateRef.html">ledgerClimateRef()</a></code>): with a fit made with climate outside the
+<code>maxAsymptote</code> ceiling (<code>fireSense_spreadFit</code>'s <code>spreadLink = "climateOutside"</code>), the reference value of each
+climate covariate; <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/spreadProbFromCovs.html" class="external-link">fireSenseUtils::spreadProbFromCovs()</a></code> then applies that link, exactly as the fit did.
+<code>NULL</code> (a fit with climate under the ceiling, or an older ledger row) is the link as it always was.</p></dd>
+
+
+<dt id="arg-powerlawgamma">powerLawGamma<a class="anchor" aria-label="anchor" href="#arg-powerlawgamma"></a></dt>
+<dd><p>the ELF's <code>powerLawGamma_spread</code> (<code><a href="ledgerPowerLawGamma.html">ledgerPowerLawGamma()</a></code>): with a fit made with
+<code>fireSense_spreadFit</code>'s <code>spreadLink = "powerLaw"</code>, its <code>gamma</code>; <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/spreadProbFromCovs.html" class="external-link">fireSenseUtils::spreadProbFromCovs()</a></code> then
+applies that link (<code><a href="https://rdrr.io/pkg/fireSenseUtils/man/powerLawLink.html" class="external-link">fireSenseUtils::powerLawLink()</a></code>, with <code>maxAsymptote</code> as <code>p_c</code>), exactly as the fit did.
+<code>NULL</code> (any other link) is the link as it always was.</p></dd>
 
 </dl></div>
     <div id="value">
