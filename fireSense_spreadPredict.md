@@ -1,7 +1,7 @@
 ---
 title: "fireSense_spreadPredict Manual"
-subtitle: "v.1.2.0.9001"
-date: "Last updated: 2026-10-14"
+subtitle: "v.1.2.0.9003"
+date: "Last updated: 2026-10-27"
 output:
   bookdown::html_document2:
     toc: true
@@ -40,7 +40,7 @@ Eliot McIntire <eliot.mcintire@nrcan-rncan.gc.ca> [aut, cre], Tati Micheletti <t
 Each year, predicts a raster of fire spread probabilities from the parameters fitted by *fireSense_spreadFit*, for the spread component of fireSense [@Marchal:2017a; @Marchal:2017b; @Marchal:2019].
 
 1. The covariates in `fireSense_SpreadCovariates` are rescaled to [0, 1] using `covMinMax_spread`, the range of the fitting data.
-2. With the one parameter set (row of `studyAreaWithSpreadParams$params[[i]]`) chosen by `.rep`, i.e. row `((rep - 1) %% number of sets) + 1` of each ELF, the spread probability is a 2- or 3-parameter logistic of the linear combination of the covariates, with lower asymptote `lowerSpreadProb`.
+2. With the one parameter set (row of `studyAreaWithSpreadParams$params[[i]]`) chosen by `.rep` (or, with `paramSetByReplicate = TRUE`, by the replicate within the job), i.e. row `((rep - 1) %% number of sets) + 1` of each ELF, the spread probability is a 2- or 3-parameter logistic of the linear combination of the covariates, with lower asymptote `lowerSpreadProb`.
 3. `fireSense_SpreadPredicted` is that single set's prediction (sets are not averaged), and `fireSense_SpreadSD` its `yearSpreadSD`, on the `flammableRTM` grid.
 
 ### Module inputs and parameters
@@ -102,6 +102,7 @@ Summary of user-visible parameters (Table \@ref(tab:moduleParams-fireSense-sprea
    <th style="text-align:left;"> min </th>
    <th style="text-align:left;"> max </th>
    <th style="text-align:left;"> paramDesc </th>
+   <th style="text-align:left;"> cacheKey </th>
   </tr>
  </thead>
 <tbody>
@@ -112,6 +113,7 @@ Summary of user-visible parameters (Table \@ref(tab:moduleParams-fireSense-sprea
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Lower asymptote of the 2- and 3-parameter logistic. Default `fireSenseUtils::spreadProbFloor`, the same constant `fireSense_spreadFit` fits with. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> ELFblendWidth </td>
@@ -120,6 +122,7 @@ Summary of user-visible parameters (Table \@ref(tab:moduleParams-fireSense-sprea
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> With several ELFs: each ELF's model also predicts this far (m) outside its own pixels, and where predictions overlap they are averaged with weights that fall linearly from 1 inside the ELF to 0 at this distance outside it. 50/50 at a boundary. The default is the buffer fireSenseUtils::makeELFs() puts around ELFs. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> maxFireSpread </td>
@@ -128,6 +131,7 @@ Summary of user-visible parameters (Table \@ref(tab:moduleParams-fireSense-sprea
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Upper limit on `spreadProb` used when fitting (default `fireSenseUtils::spreadProbCeiling`). Here it is only checked to be the same in every module that defines it. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .rep </td>
@@ -135,7 +139,17 @@ Summary of user-visible parameters (Table \@ref(tab:moduleParams-fireSense-sprea
    <td style="text-align:left;"> 1 </td>
    <td style="text-align:left;"> 1 </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Which replicate this prediction is. It selects parameter set ((rep - 1) %% number of sets) + 1 of each ELF, so replicates cycle through the fitted sets, each used whole (with its own `yearSpreadSD`), never averaged. </td>
+   <td style="text-align:left;"> Which replicate this prediction is. It selects parameter set ((rep - 1) %% number of sets) + 1 of each ELF, so replicates cycle through the fitted sets, each used whole (with its own `yearSpreadSD`), never averaged. Ignored if `paramSetByReplicate` is `TRUE`. </td>
+   <td style="text-align:left;"> TRUE </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> paramSetByReplicate </td>
+   <td style="text-align:left;"> logical </td>
+   <td style="text-align:left;"> FALSE </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> If `TRUE`, the replicate is the `run` event within the job, not `.rep`: round((time - .runInitialTime) / .runInterval) + 1 (as `fireSense_summary` numbers hindcast replicates), so one job cycles through all the fitted parameter sets. With `FALSE` the set follows `.rep`. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .runInitialTime </td>
@@ -144,6 +158,7 @@ Summary of user-visible parameters (Table \@ref(tab:moduleParams-fireSense-sprea
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Time of the first prediction. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .runInterval </td>
@@ -152,6 +167,7 @@ Summary of user-visible parameters (Table \@ref(tab:moduleParams-fireSense-sprea
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Interval between predictions, in years. `NA` predicts once. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .saveInitialTime </td>
@@ -160,6 +176,7 @@ Summary of user-visible parameters (Table \@ref(tab:moduleParams-fireSense-sprea
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Time of the `save` event, which does nothing. `NA` means never. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .studyAreaName </td>
@@ -168,6 +185,7 @@ Summary of user-visible parameters (Table \@ref(tab:moduleParams-fireSense-sprea
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Human-readable name for the study area used. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .useCache </td>
@@ -176,6 +194,7 @@ Summary of user-visible parameters (Table \@ref(tab:moduleParams-fireSense-sprea
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Should this entire module be run with caching activated? This is generally intended for data-type modules, where stochasticity and time are not relevant </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
 </tbody>
 </table>
@@ -208,9 +227,19 @@ Description of the module outputs (Table \@ref(tab:moduleOutputs-fireSense-sprea
    <td style="text-align:left;"> Spread probability of each flammable pixel, this year. </td>
   </tr>
   <tr>
+   <td style="text-align:left;"> fireSense_SpreadParamSet </td>
+   <td style="text-align:left;"> integer </td>
+   <td style="text-align:left;"> Row of the fitted parameter sets used by this prediction, named by ELF with several ELFs, for `fireSense_summary`. </td>
+  </tr>
+  <tr>
    <td style="text-align:left;"> fireSense_SpreadSD </td>
    <td style="text-align:left;"> SpatRaster&amp;#124;numeric </td>
    <td style="text-align:left;"> The fitted sd of the per-year random effect on logit spread probability (`yearSpreadSD` of the parameter set chosen by `.rep`; 0 if the fit has none), for `fireSense_burn`. One number with one fitted ELF; with several, a raster blended across ELFs with the weights of `fireSense_SpreadPredicted`. </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> fireSense_SpreadPowerLaw </td>
+   <td style="text-align:left;"> SpatRaster&amp;#124;numeric </td>
+   <td style="text-align:left;"> Only for a fit made with `spreadLink = "powerLaw"` (else NULL): `pc` (the row's `maxAsymptote`), `gamma` and `floor` (`lowerSpreadProb`) of `fireSenseUtils::powerLawLink()`, for `fireSense_burn`, which adds the year effect to the linear predictor, as the fit does. A numeric vector with one fitted ELF; with several, a 3-layer raster blended like `fireSense_SpreadSD`. </td>
   </tr>
 </tbody>
 </table>
