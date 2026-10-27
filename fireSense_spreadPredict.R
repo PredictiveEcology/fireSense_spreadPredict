@@ -34,7 +34,13 @@ defineModule(sim, list(
     defineParameter(".rep", "integer", default = 1L, min = 1L, max = NA,
                     desc = paste("Which replicate this prediction is. It selects parameter set",
                                  "((rep - 1) %% number of sets) + 1 of each ELF, so replicates cycle through the",
-                                 "fitted sets, each used whole (with its own `yearSpreadSD`), never averaged.")),
+                                 "fitted sets, each used whole (with its own `yearSpreadSD`), never averaged.",
+                                 "Ignored if `paramSetByReplicate` is `TRUE`.")),
+    defineParameter("paramSetByReplicate", "logical", default = FALSE, min = NA, max = NA,
+                    desc = paste("If `TRUE`, the replicate is the `run` event within the job, not `.rep`:",
+                                 "round((time - .runInitialTime) / .runInterval) + 1 (as `fireSense_summary` numbers",
+                                 "hindcast replicates), so one job cycles through all the fitted parameter sets.",
+                                 "With `FALSE` the set follows `.rep`.")),
     defineParameter(name = ".runInitialTime", class = "numeric", default = start(sim),
                     desc = "Time of the first prediction."),
     defineParameter(name = ".runInterval", class = "numeric", default = 1,
@@ -63,6 +69,9 @@ defineModule(sim, list(
   outputObjects = bindrows(
     createsOutput(objectName = "fireSense_SpreadPredicted", objectClass = "SpatRaster",
                   desc = "Spread probability of each flammable pixel, this year."),
+    createsOutput(objectName = "fireSense_SpreadParamSet", objectClass = "integer",
+                  desc = paste("Row of the fitted parameter sets used by this prediction, named by ELF with several",
+                               "ELFs, for `fireSense_summary`.")),
     createsOutput(objectName = "fireSense_SpreadSD", objectClass = "SpatRaster|numeric",
                   desc = paste("The fitted sd of the per-year random effect on logit spread probability",
                                "(`yearSpreadSD` of the parameter set chosen by `.rep`; 0 if the fit has none), for",
@@ -155,8 +164,13 @@ spreadPredictRun <- function(sim) {
          "). Either fireSense_spreadFit has not run yet -- its `run` event must precede this ",
          "module's -- or the shared ledger has no row for this polygon.", call. = FALSE)
 
+  rep <- if (isTRUE(P(sim)$paramSetByReplicate))
+    replicateOf(time(sim), P(sim)$.runInitialTime, P(sim)$.runInterval) else P(sim)$.rep
+  sim$fireSense_SpreadParamSet <- stats::setNames(vapply(sa$params, function(p) paramSetIndex(NROW(p), rep), integer(1)),
+                                                  if (NROW(sa) > 1L) as.character(sa[[fireSenseUtils::polygonIDTxt]]))
+
   if (NROW(sa) == 1L) {
-    params1 <- paramSetForRep(sa$params[[1]], P(sim)$.rep)
+    params1 <- paramSetForRep(sa$params[[1]], rep)
     gamma1 <- ledgerPowerLawGamma(sa, 1L)
     pred <- spreadProbOneELF(covs, params = params1, covMinMax = ledgerCovMinMax(sa, 1L, sim$covMinMax_spread),
                              yr = time(sim),
@@ -183,7 +197,7 @@ spreadPredictRun <- function(sim) {
     for (i in seq_along(ids)) {
       these <- which(w[, i] > 0)
       if (!length(these)) next
-      parsI <- paramSetForRep(sa$params[[i]], P(sim)$.rep)
+      parsI <- paramSetForRep(sa$params[[i]], rep)
       gammaI <- gammas[[i]]
       p <- spreadProbOneELF(covs[these], params = parsI, covMinMax = sa$covMinMax_spread[[i]],
                             yr = time(sim), maxFireSpread = P(sim)$maxFireSpread,
@@ -474,7 +488,30 @@ ledgerCovCentre <- function(sa, i) {
 #' @param rep integer; the replicate (the module parameter `.rep`).
 #' @return One-row `data.frame`.
 paramSetForRep <- function(params, rep) {
-  params[((rep - 1L) %% NROW(params)) + 1L, , drop = FALSE]
+  params[paramSetIndex(NROW(params), rep), , drop = FALSE]
+}
+
+#' The row of the parameter sets a replicate uses
+#'
+#' @param nSets integer; the number of fitted parameter sets of an ELF.
+#' @param rep integer; the replicate.
+#' @return integer, `((rep - 1) %% nSets) + 1`.
+paramSetIndex <- function(nSets, rep) {
+  as.integer(((rep - 1L) %% nSets) + 1L)
+}
+
+#' The replicate a `run` event is
+#'
+#' `round((time - start) / interval) + 1`, the numbering `fireSense_summary`'s `hindcastRecord()` uses
+#' (`hindcastYear`, `hindcastInterval`); the formula is written in both modules. Times need not be whole years.
+#'
+#' @param time numeric; `time(sim)`.
+#' @param start numeric; time of the first `run` event (`.runInitialTime`).
+#' @param interval numeric; `.runInterval`; `NA` (one prediction) gives replicate 1.
+#' @return integer.
+replicateOf <- function(time, start, interval) {
+  if (is.na(interval)) return(1L)
+  as.integer(round((time - start) / interval)) + 1L
 }
 
 #' The fitted sd of the per-year random effect
