@@ -1,6 +1,6 @@
 ---
 title: "fireSense_spreadPredict Manual"
-subtitle: "v.1.2.0.9004"
+subtitle: "v.1.2.0.9005"
 date: "Last updated: 2026-10-30"
 output:
   bookdown::html_document2:
