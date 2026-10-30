@@ -2995,7 +2995,7 @@ border-radius: 0px;
 
 <h1 class="title toc-ignore">fireSense_spreadPredict Manual</h1>
 <h3 class="subtitle">v.1.2.0.9004</h3>
-<h4 class="date">Last updated: 2026-10-27</h4>
+<h4 class="date">Last updated: 2026-10-30</h4>
 
 </div>
 
@@ -3443,6 +3443,17 @@ SpatRaster&amp;#124;numeric
 </td>
 <td style="text-align:left;">
 Only for a fit made with <code>spreadLink = &quot;powerLaw&quot;</code> (else NULL): <code>pc</code> (the row’s <code>maxAsymptote</code>), <code>gamma</code> and <code>floor</code> (<code>lowerSpreadProb</code>) of <code>fireSenseUtils::powerLawLink()</code>, for <code>fireSense_burn</code>, which adds the year effect to the linear predictor, as the fit does. A numeric vector with one fitted ELF; with several, a 3-layer raster blended like <code>fireSense_SpreadSD</code>.
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+fireSense_SpreadLinear
+</td>
+<td style="text-align:left;">
+SpatRaster
+</td>
+<td style="text-align:left;">
+Only for a fit made with <code>spreadLink = &quot;powerLaw&quot;</code> (else NULL): the linear predictor x of each flammable pixel (covariates % % coefficients), the step before <code>fireSenseUtils::powerLawLink()</code> turns it into <code>fireSense_SpreadPredicted</code>; <code>NA</code> where that is. A pixel with a negative x has a spread probability of 0, so <code>fireSense_burn</code> needs x itself to add the year effect there. With several ELFs, blended like <code>fireSense_SpreadPowerLaw</code>.
 </td>
 </tr>
 </tbody>
