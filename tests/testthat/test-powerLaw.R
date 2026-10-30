@@ -102,3 +102,37 @@ test_that("with several ELFs fireSense_SpreadPowerLaw is blended like the probab
   g2 <- terra::values(pl2[["gamma"]], mat = FALSE)
   expect_equal(g2[1], 2); expect_true(is.na(g2[10]))
 })
+
+test_that("a powerLaw row also hands fireSense_burn the linear predictor x, which powerLawLink() maps to p", {
+  ins <- inputsPL(gamma = 3)
+  sim <- toyRun(ins)
+  x <- sim$fireSense_SpreadLinear
+  expect_s4_class(x, "SpatRaster")
+  xv <- terra::values(x, mat = FALSE)
+  cv <- toyCovariates(); o <- order(cv$pixelID)
+  expect_equal(xv[cellsPL], 1.5 * cv$MDC[o] / 200 - 0.5 * cv$youngAge[o] + 1 * cv$fuelA[o] / 8, tolerance = 1e-9)
+  ## NA exactly where the spread probability is NA
+  expect_identical(is.na(xv), is.na(predVals(sim)))
+  ## it is the step before the link, so the link reproduces p, including pixels clipped to 0 (x < 0 here)
+  pl <- sim$fireSense_SpreadPowerLaw
+  expect_equal(fireSenseUtils::powerLawLink(xv, pl[["pc"]], pl[["gamma"]], pl[["floor"]]), predVals(sim),
+               tolerance = 1e-9)
+  expect_true(any(xv < 0, na.rm = TRUE))
+  ## any other link: no x
+  expect_null(toyRun(inputsPL(gamma = NULL, link = NULL))$fireSense_SpreadLinear)
+  expect_null(toyRun(inputsPL(gamma = 4, link = "ceiling"))$fireSense_SpreadLinear)
+})
+
+test_that("with several powerLaw ELFs fireSense_SpreadLinear is blended like the probabilities", {
+  ins <- multiInputs()
+  ins$studyAreaWithSpreadParams$params <- lapply(ins$studyAreaWithSpreadParams$params, function(p) { p$MDC <- 1; p })
+  ins$studyAreaWithSpreadParams[[linkColPL]] <- c("powerLaw", "powerLaw")
+  ins$studyAreaWithSpreadParams[[gammaColPL]] <- c(2, 4)
+  sim <- toyRun(ins, params = list(ELFblendWidth = 20000))
+  xv <- terra::values(sim$fireSense_SpreadLinear, mat = FALSE)
+  expect_equal(xv, rep(0.5, 10), tolerance = 1e-9)    # MDC is 100 everywhere: x = 1 * 0.5 in both ELFs
+  ins$studyAreaWithSpreadParams[[linkColPL]] <- c("powerLaw", "ceiling")
+  ins$studyAreaWithSpreadParams[[gammaColPL]] <- c(2, NA)
+  x2 <- terra::values(toyRun(ins, params = list(ELFblendWidth = 20000))$fireSense_SpreadLinear, mat = FALSE)
+  expect_equal(x2[1], 0.5); expect_true(is.na(x2[10]))
+})
