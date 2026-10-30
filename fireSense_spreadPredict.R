@@ -83,7 +83,13 @@ defineModule(sim, list(
                                "`maxAsymptote`), `gamma` and `floor` (`lowerSpreadProb`) of",
                                "`fireSenseUtils::powerLawLink()`, for `fireSense_burn`, which adds the year effect to the",
                                "linear predictor, as the fit does. A numeric vector with one fitted ELF; with several, a",
-                               "3-layer raster blended like `fireSense_SpreadSD`."))
+                               "3-layer raster blended like `fireSense_SpreadSD`.")),
+    createsOutput(objectName = "fireSense_SpreadLinear", objectClass = "SpatRaster",
+                  desc = paste("Only for a fit made with `spreadLink = \"powerLaw\"` (else NULL): the linear predictor x of",
+                               "each flammable pixel (covariates %*% coefficients), the step before",
+                               "`fireSenseUtils::powerLawLink()` turns it into `fireSense_SpreadPredicted`; `NA` where that is.",
+                               "A pixel with a negative x has a spread probability of 0, so `fireSense_burn` needs x itself to",
+                               "add the year effect there. With several ELFs, blended like `fireSense_SpreadPowerLaw`."))
   ))
 )
 
@@ -179,6 +185,7 @@ spreadPredictRun <- function(sim) {
                              powerLawGamma = gamma1)
     sim$fireSense_SpreadSD <- yearSpreadSDOf(params1)
     sim$fireSense_SpreadPowerLaw <- powerLawParsOf(params1, gamma1, P(sim)$lowerSpreadProb)
+    if (!is.null(gamma1)) sim$fireSense_SpreadLinear <- linearPredictorRas(sim$flammableRTM, pred)
   } else {
     ids <- as.character(sa[[fireSenseUtils::polygonIDTxt]])
     ## each ELF's weight at each pixel: static, so computed once
@@ -192,6 +199,7 @@ spreadPredictRun <- function(sim) {
               P(sim)$ELFblendWidth, " m from every fitted ELF; they get no spread probability", call. = FALSE)
     acc <- numeric(NROW(covs)); wsum <- numeric(NROW(covs)); accSD <- numeric(NROW(covs))
     accPL <- matrix(0, NROW(covs), length(powerLawParNames), dimnames = list(NULL, powerLawParNames))
+    accX <- numeric(NROW(covs))
     gammas <- lapply(seq_along(ids), function(i) ledgerPowerLawGamma(sa, i))
     wsumPL <- numeric(NROW(covs))   ## weight of the power-law ELFs only
     for (i in seq_along(ids)) {
@@ -209,6 +217,7 @@ spreadPredictRun <- function(sim) {
       accSD[rows] <- accSD[rows] + w[rows, i] * yearSpreadSDOf(parsI)
       if (!is.null(gammas[[i]])) {
         accPL[rows, ] <- accPL[rows, ] + w[rows, i] * rep(powerLawParsOf(parsI, gammas[[i]], P(sim)$lowerSpreadProb), each = length(rows))
+        accX[rows] <- accX[rows] + w[rows, i] * p$linearPredictor
         wsumPL[rows] <- wsumPL[rows] + w[rows, i]
       }
       wsum[rows] <- wsum[rows] + w[rows, i]
@@ -224,6 +233,9 @@ spreadPredictRun <- function(sim) {
       okPL <- ok & wsumPL > 0
       for (nm in powerLawParNames)
         sim$fireSense_SpreadPowerLaw[[nm]][covs$pixelID[okPL]] <- accPL[okPL, nm] / wsumPL[okPL]
+      sim$fireSense_SpreadLinear <- linearPredictorRas(sim$flammableRTM,
+                                                       data.table(pixelID = covs$pixelID[okPL],
+                                                                  linearPredictor = accX[okPL] / wsumPL[okPL]))
     }
   }
 
@@ -294,7 +306,8 @@ ELFblendWeights <- function(elfRas, template, pixelID, ids, width) {
 #'   `fireSense_spreadFit`'s `spreadLink = "powerLaw"`, its `gamma`; `fireSenseUtils::spreadProbFromCovs()` then
 #'   applies that link (`fireSenseUtils::powerLawLink()`, with `maxAsymptote` as `p_c`), exactly as the fit did.
 #'   `NULL` (any other link) is the link as it always was.
-#' @return `data.table` with `pixelID` and `spreadProb`, from the one parameter set in `params`.
+#' @return `data.table` with `pixelID` and `spreadProb`, from the one parameter set in `params`; with
+#'   `powerLawGamma` also `linearPredictor`, the `x` that `spreadProb` is the power-law link of.
 spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSpreadProb,
                              covCentre = NULL, climateRef = NULL, powerLawGamma = NULL) {
   moduleName <- "fireSense_spreadPredict"
@@ -381,10 +394,26 @@ spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSp
   matching <- intersect(names(covPars), colnames(mat))
 
   ## the one function the fit computes its spread probability with, so the prediction cannot differ from it
-  data.table(pixelID = shortAnnDT$pixelID,
-             spreadProb = spreadProbFromCovs(mat[, matching, drop = FALSE], logisticPars, covPars, lowerSpreadProb,
-                                             link = if (!is.null(powerLawGamma)) "powerLaw",
-                                             climateRef = climateRef, powerLawGamma = powerLawGamma))
+  out <- data.table(pixelID = shortAnnDT$pixelID,
+                    spreadProb = spreadProbFromCovs(mat[, matching, drop = FALSE], logisticPars, covPars, lowerSpreadProb,
+                                                    link = if (!is.null(powerLawGamma)) "powerLaw",
+                                                    climateRef = climateRef, powerLawGamma = powerLawGamma))
+  ## the power-law link's input, which that link clips at 0 and so cannot be recovered from spreadProb
+  if (!is.null(powerLawGamma))
+    set(out, NULL, "linearPredictor", as.vector(mat[, matching, drop = FALSE] %*% covPars))
+  out
+}
+
+#' `fireSense_SpreadLinear`: the linear predictor on the grid of `flammableRTM`
+#'
+#' @param template `sim$flammableRTM`.
+#' @param dt `data.table` with `pixelID` (cells of `template`) and `linearPredictor`.
+#' @return A `SpatRaster`, `NA` outside `dt`.
+linearPredictorRas <- function(template, dt) {
+  r <- rast(template)
+  r[dt$pixelID] <- dt$linearPredictor
+  names(r) <- "fireSense_SpreadLinear"
+  r
 }
 
 yearSpreadSDTxt <- "yearSpreadSD"
