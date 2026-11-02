@@ -10,6 +10,7 @@
 
 linkColPL <- fireSenseUtils::spreadLinkTxt
 gammaColPL <- fireSenseUtils::spreadFitPowerLawGammaTxt
+shapeColPL <- fireSenseUtils::spreadFitPowerLawShapeTxt
 cellsPL <- c(1, 2, 3, 4, 6, 7, 8)
 
 inputsPL <- function(gamma = 1.9, link = "powerLaw") {
@@ -20,10 +21,10 @@ inputsPL <- function(gamma = 1.9, link = "powerLaw") {
 }
 
 ## by hand, in cell order
-pHandPL <- function(gamma = 1.9, pc = 0.25, floor = 0.13) {
+pHandPL <- function(gamma = 1.9, pc = 0.25, floor = 0.13, shape = 1) {
   cv <- toyCovariates(); o <- order(cv$pixelID)
   x <- 1.5 * cv$MDC[o] / 200 - 0.5 * cv$youngAge[o] + 1 * cv$fuelA[o] / 8
-  pmax(pc - (pc - floor) * exp(-x / gamma), 0)
+  pmax(pc - (pc - floor) * exp(-sign(x) * abs(x / gamma)^shape), 0)
 }
 
 test_that("a powerLaw row predicts p = pc - (pc - floor) * exp(-x / gamma), with its own gamma", {
@@ -77,7 +78,7 @@ test_that("a powerLaw row hands fireSense_burn pc, gamma and floor, so it can ad
   expect_no_warning(sim <- toyRun(ins))
   expect_equal(predVals(sim)[cellsPL], pHandPL(3), tolerance = 1e-9)
   expect_equal(sim$fireSense_SpreadSD, 0.3)
-  expect_identical(sim$fireSense_SpreadPowerLaw, c(pc = 0.25, gamma = 3, floor = 0.13))
+  expect_identical(sim$fireSense_SpreadPowerLaw, c(pc = 0.25, gamma = 3, floor = 0.13, shape = 1))
   ## any other link: nothing for fireSense_burn, which keeps the year effect on the logit
   expect_null(toyRun(inputsPL(gamma = NULL, link = NULL))$fireSense_SpreadPowerLaw)
   expect_null(toyRun(inputsPL(gamma = 4, link = "ceiling"))$fireSense_SpreadPowerLaw)
@@ -90,7 +91,7 @@ test_that("with several ELFs fireSense_SpreadPowerLaw is blended like the probab
   ins$studyAreaWithSpreadParams[[gammaColPL]] <- c(2, 4)
   pl <- toyRun(ins, params = list(ELFblendWidth = 20000))$fireSense_SpreadPowerLaw
   expect_s4_class(pl, "SpatRaster")
-  expect_identical(names(pl), c("pc", "gamma", "floor"))
+  expect_identical(names(pl), c("pc", "gamma", "floor", "shape"))
   g <- terra::values(pl[["gamma"]], mat = FALSE)
   expect_equal(g[1], 2); expect_equal(g[10], 4)                 # each ELF's own gamma, in its own interior
   expect_true(all(g >= 2 & g <= 4, na.rm = TRUE))
@@ -135,4 +136,32 @@ test_that("with several powerLaw ELFs fireSense_SpreadLinear is blended like the
   ins$studyAreaWithSpreadParams[[gammaColPL]] <- c(2, NA)
   x2 <- terra::values(toyRun(ins, params = list(ELFblendWidth = 20000))$fireSense_SpreadLinear, mat = FALSE)
   expect_equal(x2[1], 0.5); expect_true(is.na(x2[10]))
+})
+
+test_that("a row's powerLawShape_spread bends the link; a row without it, or NA, is shape 1", {
+  base <- predVals(toyRun(inputsPL(gamma = 3)))[cellsPL]
+  ins <- inputsPL(gamma = 3)
+  ins$studyAreaWithSpreadParams[[shapeColPL]] <- 2
+  sim <- toyRun(ins)
+  expect_equal(predVals(sim)[cellsPL], pHandPL(3, shape = 2), tolerance = 1e-9)
+  expect_false(isTRUE(all.equal(predVals(sim)[cellsPL], base)))
+  ## handed to fireSense_burn with pc, gamma and floor
+  expect_identical(sim$fireSense_SpreadPowerLaw, c(pc = 0.25, gamma = 3, floor = 0.13, shape = 2))
+  ## absent column, NA and 1 all give the original link
+  ins$studyAreaWithSpreadParams[[shapeColPL]] <- NA_real_
+  expect_identical(predVals(toyRun(ins))[cellsPL], base)
+  ins$studyAreaWithSpreadParams[[shapeColPL]] <- 1
+  expect_identical(predVals(toyRun(ins))[cellsPL], base)
+  sa <- toyInputs()$studyAreaWithSpreadParams
+  expect_identical(ledgerPowerLawShape(sa, 1L), 1)
+  sa[[shapeColPL]] <- 2.5
+  expect_identical(ledgerPowerLawShape(sa, 1L), 2.5)
+  sa[[shapeColPL]] <- -1
+  expect_error(ledgerPowerLawShape(sa, 1L), "invalid")
+  ## the linear predictor mapped by the link with the handed shape reproduces p
+  ins$studyAreaWithSpreadParams[[shapeColPL]] <- 2
+  sim <- toyRun(ins)
+  pl <- sim$fireSense_SpreadPowerLaw
+  expect_equal(fireSenseUtils::powerLawLink(terra::values(sim$fireSense_SpreadLinear, mat = FALSE), pl[["pc"]],
+                                            pl[["gamma"]], pl[["floor"]], pl[["shape"]]), predVals(sim), tolerance = 1e-9)
 })
