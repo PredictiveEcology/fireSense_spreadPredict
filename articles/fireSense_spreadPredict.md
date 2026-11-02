@@ -1,7 +1,7 @@
 ---
 title: "fireSense_spreadPredict Manual"
 subtitle: "v.1.2.0.9005"
-date: "Last updated: 2026-10-30"
+date: "Last updated: 2026-11-02"
 output:
   bookdown::html_document2:
     toc: true
@@ -241,7 +241,7 @@ Description of the module outputs (Table \@ref(tab:moduleOutputs-fireSense-sprea
   <tr>
    <td style="text-align:left;"> fireSense_SpreadPowerLaw </td>
    <td style="text-align:left;"> SpatRaster&amp;#124;numeric </td>
-   <td style="text-align:left;"> Only for a fit made with `spreadLink = "powerLaw"` (else NULL): `pc` (the row's `maxAsymptote`), `gamma` and `floor` (`lowerSpreadProb`) of `fireSenseUtils::powerLawLink()`, for `fireSense_burn`, which adds the year effect to the linear predictor, as the fit does. A numeric vector with one fitted ELF; with several, a 3-layer raster blended like `fireSense_SpreadSD`. </td>
+   <td style="text-align:left;"> Only for a fit made with `spreadLink = "powerLaw"` (else NULL): `pc` (the row's `maxAsymptote`), `gamma`, `floor` (`lowerSpreadProb`) and `shape` of `fireSenseUtils::powerLawLink()`, for `fireSense_burn`, which adds the year effect to the linear predictor, as the fit does. A numeric vector with one fitted ELF; with several, a 4-layer raster blended like `fireSense_SpreadSD`. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> fireSense_SpreadLinear </td>

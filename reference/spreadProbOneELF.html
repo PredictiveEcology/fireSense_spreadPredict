@@ -66,7 +66,8 @@
 <span>  <span class="va">lowerSpreadProb</span>,</span>
 <span>  covCentre <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  climateRef <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  powerLawGamma <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  powerLawGamma <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  powerLawShape <span class="op">=</span> <span class="fu">fireSenseUtils</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/fireSenseUtils/man/fireSenseUtils-constants.html" class="external-link">spreadPowerLawShape</a></span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -113,6 +114,11 @@ climate covariate; <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/spreadP
 <code>fireSense_spreadFit</code>'s <code>spreadLink = "powerLaw"</code>, its <code>gamma</code>; <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/spreadProbFromCovs.html" class="external-link">fireSenseUtils::spreadProbFromCovs()</a></code> then
 applies that link (<code><a href="https://rdrr.io/pkg/fireSenseUtils/man/powerLawLink.html" class="external-link">fireSenseUtils::powerLawLink()</a></code>, with <code>maxAsymptote</code> as <code>p_c</code>), exactly as the fit did.
 <code>NULL</code> (any other link) is the link as it always was.</p></dd>
+
+
+<dt id="arg-powerlawshape">powerLawShape<a class="anchor" aria-label="anchor" href="#arg-powerlawshape"></a></dt>
+<dd><p>the ELF's <code>powerLawShape_spread</code> (<code><a href="ledgerPowerLawShape.html">ledgerPowerLawShape()</a></code>): the <code>shape</code> of the link, with
+<code>powerLawGamma</code>; 1 (the original link) by default.</p></dd>
 
 </dl></div>
     <div id="value">
