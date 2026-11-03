@@ -1,7 +1,7 @@
 ---
 title: "fireSense_spreadPredict Manual"
 subtitle: "v.1.2.0.9006"
-date: "Last updated: 2026-11-02"
+date: "Last updated: 2026-11-03"
 output:
   bookdown::html_document2:
     toc: true
@@ -23,10 +23,6 @@ always_allow_html: true
 (ref:fireSense-spreadPredict) *fireSense_spreadPredict*
 
 
-
-[![made-with-Markdown](figures/markdownBadge.png)](https://commonmark.org)
-
-<!-- if knitting to pdf remember to add the pandoc_args: ["--extract-media", "."] option to yml in order to get the badge images -->
 
 #### Authors:
 
