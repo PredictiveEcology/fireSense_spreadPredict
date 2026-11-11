@@ -215,3 +215,36 @@ test_that("one ELF: yearSpreadSD is not a coefficient; fireSense_SpreadSD is the
   expect_equal(sim$fireSense_SpreadSD, 0.3)
   expect_identical(toyRun()$fireSense_SpreadSD, 0)
 })
+
+test_that("one ELF: fireSpreadSD is not a coefficient; fireSense_SpreadFireSD is the chosen set's value", {
+  base <- toyRun()
+  p2 <- rbind(toyParams(), toyParams())
+  p2$fireSpreadSD <- c(0.2, 0.6)
+  p2$yearSpreadSD <- c(0.3, 0.5)
+  sim <- toyRun(toyInputs(params = p2))
+  expect_equal(predVals(sim), predVals(base), tolerance = 1e-12)
+  expect_equal(sim$fireSense_SpreadFireSD, 0.2)
+  expect_equal(sim$fireSense_SpreadSD, 0.3)
+  ## a ledger row from before fireSpreadSD existed
+  expect_identical(base$fireSense_SpreadFireSD, 0)
+  p1 <- toyParams(); p1$yearSpreadSD <- 0.3
+  expect_identical(toyRun(toyInputs(params = p1))$fireSense_SpreadFireSD, 0)
+})
+
+test_that("the ledger's escape definition is output, and must match this run's", {
+  withDef <- function(size, causes) {
+    ins <- toyInputs()
+    ins$studyAreaWithSpreadParams$escapeSizeHa <- size
+    ins$studyAreaWithSpreadParams$fireCauses <- causes
+    ins
+  }
+  sim <- toyRun(withDef(50, "natural,unknown"))
+  expect_equal(sim$fireSense_EscapeDefinition$escapeSizeHa, 50)
+  expect_identical(sim$fireSense_EscapeDefinition$fireCauses, "natural,unknown")
+  ## a row without a definition (fitted before it was recorded) is not checked
+  expect_true(is.na(toyRun()$fireSense_EscapeDefinition$escapeSizeHa))
+  expect_error(toyRun(withDef(100, "natural,unknown")), "escape definition")
+  expect_error(toyRun(withDef(50, "natural")), "escape definition")
+  ## this run's definition is the module's parameters
+  expect_no_error(toyRun(withDef(100, "natural"), params = list(escapeSizeHa = 100, fireCauses = "natural")))
+})

@@ -51,3 +51,26 @@ test_that("without yearSpreadSD in the fits the sd is 0 everywhere", {
   sim <- toyRun(multiInputs(), params = list(ELFblendWidth = 20000))
   expect_true(all(terra::values(sim$fireSense_SpreadSD, mat = FALSE) == 0))
 })
+
+## ---- the per-fire random effect (fireSpreadSD) ----
+test_that("fireSpreadSD does not change the spread probability, and is blended per ELF into fireSense_SpreadFireSD", {
+  ins <- multiInputs()
+  base <- predVals(toyRun(ins, params = list(ELFblendWidth = 20000)))
+  ins$studyAreaWithSpreadParams$params <- Map(function(p, s) { p$fireSpreadSD <- s; p },
+                                              ins$studyAreaWithSpreadParams$params, c(0.2, 0.6))
+  sim <- toyRun(ins, params = list(ELFblendWidth = 20000))
+  expect_equal(predVals(sim), base, tolerance = 1e-12)
+  rA <- c(1, 1, 1, 1, 1, 0.75, 0.5, 0.25, 0, 0); rB <- rev(rA)
+  expect_equal(terra::values(sim$fireSense_SpreadFireSD, mat = FALSE), (rA * 0.2 + rB * 0.6) / (rA + rB), tolerance = 1e-9)
+})
+
+test_that("with several ELFs each row's escape definition is checked", {
+  ins <- multiInputs()
+  ins$studyAreaWithSpreadParams$escapeSizeHa <- c(50, 100)
+  ins$studyAreaWithSpreadParams$fireCauses <- "natural,unknown"
+  expect_error(toyRun(ins), "escape definition")
+  ins$studyAreaWithSpreadParams$escapeSizeHa <- 50
+  sim <- toyRun(ins)
+  expect_identical(NROW(sim$fireSense_EscapeDefinition), 2L)
+  expect_identical(sim$fireSense_EscapeDefinition$polygonID, c("A", "B"))
+})
