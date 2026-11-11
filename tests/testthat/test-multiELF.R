@@ -69,6 +69,7 @@ test_that("with several ELFs each row's escape definition is checked", {
   ins$studyAreaWithSpreadParams$escapeSizeHa <- c(50, 100)
   ins$studyAreaWithSpreadParams$fireCauses <- "natural,unknown"
   expect_error(toyRun(ins), "escape definition")
+  expect_error(toyRun(ins), "ELF B")                      # the row that differs, by its polygonID
   ins$studyAreaWithSpreadParams$escapeSizeHa <- 50
   sim <- toyRun(ins)
   expect_identical(NROW(sim$fireSense_EscapeDefinition), 2L)

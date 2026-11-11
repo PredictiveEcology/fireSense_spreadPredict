@@ -128,8 +128,8 @@ doEvent.fireSense_spreadPredict <- function(sim, eventTime, eventType, debug = F
     eventType,
     init = {
 
-      for (pc in c("maxFireSpread", "escapeSizeHa", "fireCauses"))
-        SpaDES.core::paramCheckOtherMods(sim, paramToCheck = pc, moduleToUse = "all", ifSetButDifferent = "error")
+      SpaDES.core::paramCheckOtherMods(sim, paramToCheck = "maxFireSpread", moduleToUse = "all", ifSetButDifferent = "error")
+      fireSenseUtils::escapeDefinitionOf(sim)
       
       sim <- scheduleEvent(sim, eventTime = P(sim)$.runInitialTime, moduleName, "run",
                            eventPriority = 5.12)
@@ -188,7 +188,9 @@ spreadPredictRun <- function(sim) {
          "). Either fireSense_spreadFit has not run yet -- its `run` event must precede this ",
          "module's -- or the shared ledger has no row for this polygon.", call. = FALSE)
 
-  sim$fireSense_EscapeDefinition <- checkedEscapeDefinition(sa, fireSenseUtils::escapeDefinition(P(sim)$escapeSizeHa, P(sim)$fireCauses))
+  sim$fireSense_EscapeDefinition <- ledgerEscapeDefinition(sa)
+  fireSenseUtils::checkEscapeDefinition(sim$fireSense_EscapeDefinition, fireSenseUtils::escapeDefinitionOf(sim),
+                                        "the ledger row")
 
   rep <- if (isTRUE(P(sim)$paramSetByReplicate))
     replicateOf(time(sim), P(sim)$.runInitialTime, P(sim)$.runInterval) else P(sim)$.rep
@@ -445,12 +447,10 @@ linearPredictorRas <- function(template, dt) {
   r
 }
 
-yearSpreadSDTxt <- "yearSpreadSD"
-fireSpreadSDTxt <- "fireSpreadSD"
-
 ## the outputs that carry a fitted random-effect sd, named by the parameter each takes it from; together they
 ## are `fireSenseUtils::spreadRandomEffectTxt`
-randomEffectOutputs <- list(fireSense_SpreadFireSD = fireSpreadSDTxt, fireSense_SpreadSD = yearSpreadSDTxt)
+randomEffectOutputs <- list(fireSense_SpreadFireSD = fireSenseUtils::fireSpreadSDTxt,
+                            fireSense_SpreadSD = fireSenseUtils::yearSpreadSDTxt)
 
 #' The names of `fireSense_SpreadPowerLaw`
 powerLawParNames <- c("pc", "gamma", "floor", "shape")
@@ -602,26 +602,23 @@ replicateOf <- function(time, start, interval) {
 #' probability; `fireSpreadSD` is one per fire. Both are in `fireSenseUtils::spreadRandomEffectTxt`.
 #'
 #' @param params one-row `data.frame`: the parameter set in use (`paramSetForRep()`).
-#' @param txt the parameter name, `yearSpreadSDTxt` or `fireSpreadSDTxt`.
+#' @param txt the parameter name, `fireSenseUtils::yearSpreadSDTxt` or `fireSenseUtils::fireSpreadSDTxt`.
 #' @return Numeric; 0 when the fit has no such parameter (a ledger row written before it existed).
 randomEffectSDOf <- function(params, txt) {
   if (!txt %in% names(params)) return(0)
   params[[txt]]
 }
 
-#' The escape definition of each ledger row, checked against this run's
+#' The escape definition each ledger row recorded
 #'
 #' @param sa `sim$studyAreaWithSpreadParams`, one row per ELF.
-#' @param current this run's definition, from `fireSenseUtils::escapeDefinition()`.
 #' @return A `data.frame` with the columns of `fireSenseUtils::escapeDefinition()` (`NA` for a row without them) and,
-#'   if `sa` has it, `polygonID`. Stops if a row's definition differs from `current`.
-checkedEscapeDefinition <- function(sa, current) {
+#'   if `sa` has it, `polygonID`: what `fireSenseUtils::checkEscapeDefinition()` checks against this run's definition.
+ledgerEscapeDefinition <- function(sa) {
   tmpl <- fireSenseUtils::escapeDefinition()
   def <- as.data.frame(lapply(stats::setNames(names(tmpl), names(tmpl)), function(cl)
     if (cl %in% names(sa)) rep_len(sa[[cl]], NROW(sa)) else rep(tmpl[[cl]][NA_integer_], NROW(sa))))
   idCol <- fireSenseUtils::polygonIDTxt
   if (idCol %in% names(sa)) def[[idCol]] <- as.character(sa[[idCol]])
-  for (i in which(!is.na(def$escapeSizeHa)))
-    fireSenseUtils::checkEscapeDefinition(def[i, , drop = FALSE], current, what = paste0("ledger row ", i))
   def
 }
