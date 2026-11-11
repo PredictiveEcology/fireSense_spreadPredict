@@ -27,6 +27,14 @@ defineModule(sim, list(
                                  "pixels, and where predictions overlap they are averaged with weights that fall",
                                  "linearly from 1 inside the ELF to 0 at this distance outside it. 50/50 at a",
                                  "boundary. The default is the buffer fireSenseUtils::makeELFs() puts around ELFs.")),
+    defineParameter("escapeSizeHa", "numeric", default = fireSenseUtils::fireSenseEscapeSizeHa,
+                    desc = paste("Size (ha) at and above which a fire counts as an escape. The ledger rows must have been",
+                                 "fitted with this definition, else the module stops",
+                                 "(`fireSenseUtils::checkEscapeDefinition()`). Checked to be the same in every module that",
+                                 "defines it.")),
+    defineParameter("fireCauses", "character", default = fireSenseUtils::fireSenseFireCauses,
+                    desc = paste("Cause groups of the fires that count as escapes (`fireSenseUtils::fireCauseCodes()`);",
+                                 "part of the escape definition, checked like `escapeSizeHa`.")),
     defineParameter("maxFireSpread", "numeric", default = fireSenseUtils::spreadProbCeiling,
                     desc = paste("Upper limit on `spreadProb` used when fitting (default",
                                  "`fireSenseUtils::spreadProbCeiling`). Here it is only checked",
@@ -78,6 +86,16 @@ defineModule(sim, list(
                                "`fireSense_burn`. One number with one",
                                "fitted ELF; with several, a raster blended across ELFs with the weights of",
                                "`fireSense_SpreadPredicted`.")),
+    createsOutput(objectName = "fireSense_SpreadFireSD", objectClass = "SpatRaster|numeric",
+                  desc = paste("The fitted sd of the per-fire random effect on spread probability (`fireSpreadSD` of the",
+                               "parameter set chosen by `.rep`; 0 for a ledger row without it), for `fireSense_burn`.",
+                               "Shaped like `fireSense_SpreadSD`: one number with one fitted ELF; with several, a raster",
+                               "of each ELF's value blended with the weights of `fireSense_SpreadPredicted`.")),
+    createsOutput(objectName = "fireSense_EscapeDefinition", objectClass = "data.frame",
+                  desc = paste("The escape definition the ledger rows were fitted with (`escapeSizeHa`, `fireCauses`;",
+                               "`fireSenseUtils::escapeDefinition()`), one row per fitted ELF (with its `polygonID`);",
+                               "`NA` for a row fitted before the definition was recorded. Each row has been checked",
+                               "against this run's `escapeSizeHa` and `fireCauses`.")),
     createsOutput(objectName = "fireSense_SpreadPowerLaw", objectClass = "SpatRaster|numeric",
                   desc = paste("Only for a fit made with `spreadLink = \"powerLaw\"` (else NULL): `pc` (the row's",
                                "`maxAsymptote`), `gamma`, `floor` (`lowerSpreadProb`) and `shape` of",
@@ -110,8 +128,8 @@ doEvent.fireSense_spreadPredict <- function(sim, eventTime, eventType, debug = F
     eventType,
     init = {
 
-      SpaDES.core::paramCheckOtherMods(sim, paramToCheck = "maxFireSpread", moduleToUse = "all")
-      SpaDES.core::paramCheckOtherMods(sim, paramToCheck = "maxFireSpread", moduleToUse = "all")
+      for (pc in c("maxFireSpread", "escapeSizeHa", "fireCauses"))
+        SpaDES.core::paramCheckOtherMods(sim, paramToCheck = pc, moduleToUse = "all", ifSetButDifferent = "error")
       
       sim <- scheduleEvent(sim, eventTime = P(sim)$.runInitialTime, moduleName, "run",
                            eventPriority = 5.12)
@@ -170,6 +188,8 @@ spreadPredictRun <- function(sim) {
          "). Either fireSense_spreadFit has not run yet -- its `run` event must precede this ",
          "module's -- or the shared ledger has no row for this polygon.", call. = FALSE)
 
+  sim$fireSense_EscapeDefinition <- checkedEscapeDefinition(sa, fireSenseUtils::escapeDefinition(P(sim)$escapeSizeHa, P(sim)$fireCauses))
+
   rep <- if (isTRUE(P(sim)$paramSetByReplicate))
     replicateOf(time(sim), P(sim)$.runInitialTime, P(sim)$.runInterval) else P(sim)$.rep
   sim$fireSense_SpreadParamSet <- stats::setNames(vapply(sa$params, function(p) paramSetIndex(NROW(p), rep), integer(1)),
@@ -184,7 +204,7 @@ spreadPredictRun <- function(sim) {
                              maxFireSpread = P(sim)$maxFireSpread, lowerSpreadProb = P(sim)$lowerSpreadProb,
                              covCentre = ledgerCovCentre(sa, 1L), climateRef = ledgerClimateRef(sa, 1L),
                              powerLawGamma = gamma1, powerLawShape = shape1)
-    sim$fireSense_SpreadSD <- yearSpreadSDOf(params1)
+    for (nm in names(randomEffectOutputs)) sim[[nm]] <- randomEffectSDOf(params1, randomEffectOutputs[[nm]])
     sim$fireSense_SpreadPowerLaw <- powerLawParsOf(params1, gamma1, P(sim)$lowerSpreadProb, shape1)
     if (!is.null(gamma1)) sim$fireSense_SpreadLinear <- linearPredictorRas(sim$flammableRTM, pred)
   } else {
@@ -198,7 +218,7 @@ spreadPredictRun <- function(sim) {
     if (any(none))
       warning("fireSense_spreadPredict: ", sum(none), " flammable pixels are more than ",
               P(sim)$ELFblendWidth, " m from every fitted ELF; they get no spread probability", call. = FALSE)
-    acc <- numeric(NROW(covs)); wsum <- numeric(NROW(covs)); accSD <- numeric(NROW(covs))
+    acc <- numeric(NROW(covs)); wsum <- numeric(NROW(covs)); accSD <- matrix(0, NROW(covs), length(randomEffectOutputs), dimnames = list(NULL, names(randomEffectOutputs)))
     accPL <- matrix(0, NROW(covs), length(powerLawParNames), dimnames = list(NULL, powerLawParNames))
     accX <- numeric(NROW(covs))
     gammas <- lapply(seq_along(ids), function(i) ledgerPowerLawGamma(sa, i))
@@ -216,7 +236,7 @@ spreadPredictRun <- function(sim) {
                             powerLawGamma = gammaI, powerLawShape = shapes[[i]])
       rows <- these[match(p$pixelID, covs$pixelID[these])]
       acc[rows] <- acc[rows] + w[rows, i] * p$spreadProb
-      accSD[rows] <- accSD[rows] + w[rows, i] * yearSpreadSDOf(parsI)
+      accSD[rows, ] <- accSD[rows, ] + w[rows, i] * rep(vapply(randomEffectOutputs, function(txt) randomEffectSDOf(parsI, txt), numeric(1)), each = length(rows))
       if (!is.null(gammas[[i]])) {
         accPL[rows, ] <- accPL[rows, ] + w[rows, i] * rep(powerLawParsOf(parsI, gammas[[i]], P(sim)$lowerSpreadProb, shapes[[i]]), each = length(rows))
         accX[rows] <- accX[rows] + w[rows, i] * p$linearPredictor
@@ -226,9 +246,11 @@ spreadPredictRun <- function(sim) {
     }
     ok <- wsum > 0
     pred <- data.table(pixelID = covs$pixelID[ok], spreadProb = acc[ok] / wsum[ok])
-    ## each ELF's year effect sd, blended like the probabilities: fireSense_burn scales one z per year by it
-    sim$fireSense_SpreadSD <- rast(sim$flammableRTM)
-    sim$fireSense_SpreadSD[covs$pixelID[ok]] <- accSD[ok] / wsum[ok]
+    ## each ELF's random-effect sds, blended like the probabilities: fireSense_burn scales its draws by them
+    for (nm in names(randomEffectOutputs)) {
+      sim[[nm]] <- rast(sim$flammableRTM)
+      sim[[nm]][covs$pixelID[ok]] <- accSD[ok, nm] / wsum[ok]
+    }
     if (any(wsumPL > 0)) {   ## a power-law fit: pc, gamma, floor and shape blended over the power-law ELFs; NA where there is none
       sim$fireSense_SpreadPowerLaw <- rast(sim$flammableRTM, nlyrs = length(powerLawParNames))
       names(sim$fireSense_SpreadPowerLaw) <- powerLawParNames
@@ -317,10 +339,11 @@ spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSp
                              powerLawShape = fireSenseUtils::spreadPowerLawShape) {
   moduleName <- "fireSense_spreadPredict"
   covs <- copy(covs)
-  ## the per-year random effect is not a covariate coefficient: fireSense_burn applies it (fireSense_SpreadSD)
-  if (yearSpreadSDTxt %in% names(params)) {
+  ## the random effects are not covariate coefficients: fireSense_burn applies them (randomEffectOutputs)
+  randomEffects <- intersect(names(params), fireSenseUtils::spreadRandomEffectTxt)
+  if (length(randomEffects)) {
     params <- as.data.frame(params)
-    params[[yearSpreadSDTxt]] <- NULL
+    params[randomEffects] <- NULL
   }
 
   ## Fuel biomass arrives logged (fireSenseUtils::logMinB()). A fit made on LINEAR fuel biomass has
@@ -423,6 +446,11 @@ linearPredictorRas <- function(template, dt) {
 }
 
 yearSpreadSDTxt <- "yearSpreadSD"
+fireSpreadSDTxt <- "fireSpreadSD"
+
+## the outputs that carry a fitted random-effect sd, named by the parameter each takes it from; together they
+## are `fireSenseUtils::spreadRandomEffectTxt`
+randomEffectOutputs <- list(fireSense_SpreadFireSD = fireSpreadSDTxt, fireSense_SpreadSD = yearSpreadSDTxt)
 
 #' The names of `fireSense_SpreadPowerLaw`
 powerLawParNames <- c("pc", "gamma", "floor", "shape")
@@ -568,14 +596,32 @@ replicateOf <- function(time, start, interval) {
   as.integer(round((time - start) / interval)) + 1L
 }
 
-#' The fitted sd of the per-year random effect
+#' The fitted sd of a random effect
 #'
 #' `yearSpreadSD` (fireSense_spreadFit, fireSenseUtils >= 0.2.3.9041) is one eps per year on logit spread
-#' probability.
+#' probability; `fireSpreadSD` is one per fire. Both are in `fireSenseUtils::spreadRandomEffectTxt`.
 #'
 #' @param params one-row `data.frame`: the parameter set in use (`paramSetForRep()`).
-#' @return Numeric; 0 when the fit has no `yearSpreadSD`.
-yearSpreadSDOf <- function(params) {
-  if (!yearSpreadSDTxt %in% names(params)) return(0)
-  params[[yearSpreadSDTxt]]
+#' @param txt the parameter name, `yearSpreadSDTxt` or `fireSpreadSDTxt`.
+#' @return Numeric; 0 when the fit has no such parameter (a ledger row written before it existed).
+randomEffectSDOf <- function(params, txt) {
+  if (!txt %in% names(params)) return(0)
+  params[[txt]]
+}
+
+#' The escape definition of each ledger row, checked against this run's
+#'
+#' @param sa `sim$studyAreaWithSpreadParams`, one row per ELF.
+#' @param current this run's definition, from `fireSenseUtils::escapeDefinition()`.
+#' @return A `data.frame` with the columns of `fireSenseUtils::escapeDefinition()` (`NA` for a row without them) and,
+#'   if `sa` has it, `polygonID`. Stops if a row's definition differs from `current`.
+checkedEscapeDefinition <- function(sa, current) {
+  tmpl <- fireSenseUtils::escapeDefinition()
+  def <- as.data.frame(lapply(stats::setNames(names(tmpl), names(tmpl)), function(cl)
+    if (cl %in% names(sa)) rep_len(sa[[cl]], NROW(sa)) else rep(tmpl[[cl]][NA_integer_], NROW(sa))))
+  idCol <- fireSenseUtils::polygonIDTxt
+  if (idCol %in% names(sa)) def[[idCol]] <- as.character(sa[[idCol]])
+  for (i in which(!is.na(def$escapeSizeHa)))
+    fireSenseUtils::checkEscapeDefinition(def[i, , drop = FALSE], current, what = paste0("ledger row ", i))
+  def
 }

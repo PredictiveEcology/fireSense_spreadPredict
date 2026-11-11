@@ -29,7 +29,8 @@ test_that("outputs are the expected names and classes", {
   outputs <- stats::setNames(md$outputObjects$objectClass, md$outputObjects$objectName)
   expect_identical(
     outputs[order(names(outputs))],
-    c(fireSense_SpreadLinear = "SpatRaster", fireSense_SpreadParamSet = "integer", fireSense_SpreadPowerLaw = "SpatRaster|numeric", fireSense_SpreadPredicted = "SpatRaster",
+    c(fireSense_EscapeDefinition = "data.frame", fireSense_SpreadFireSD = "SpatRaster|numeric",
+      fireSense_SpreadLinear = "SpatRaster", fireSense_SpreadParamSet = "integer", fireSense_SpreadPowerLaw = "SpatRaster|numeric", fireSense_SpreadPredicted = "SpatRaster",
       fireSense_SpreadSD = "SpatRaster|numeric")
   )
 })
@@ -48,11 +49,11 @@ paramTable <- function(md) {
 test_that("parameters have the expected names, classes and defaults", {
   md <- SpaDES.core::moduleMetadata(module = moduleName, path = modulePath)
   expected <- data.frame(
-    class   = c("integer", "numeric", "numeric", "numeric", "character", "logical", "numeric", "numeric", "numeric", "logical"),
+    class   = c("integer", "numeric", "numeric", "numeric", "character", "logical", "numeric", "numeric", "character", "numeric", "numeric", "logical"),
     ## .runInitialTime defaults to start(sim), which is 0 when only metadata is parsed
-    default = c("1L", "0", "1", "NA", "NA", "FALSE", "20000", "0.13", "0.276", "FALSE"),
+    default = c("1L", "0", "1", "NA", "NA", "FALSE", "20000", "50", "c(\"natural\", \"unknown\")", "0.13", "0.276", "FALSE"),
     row.names = c(".rep", ".runInitialTime", ".runInterval", ".saveInitialTime", ".studyAreaName", ".useCache",
-                  "ELFblendWidth", "lowerSpreadProb", "maxFireSpread", "paramSetByReplicate")
+                  "ELFblendWidth", "escapeSizeHa", "fireCauses", "lowerSpreadProb", "maxFireSpread", "paramSetByReplicate")
   )
   expect_identical(paramTable(md), expected)
 })
