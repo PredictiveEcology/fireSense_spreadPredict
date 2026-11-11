@@ -1,7 +1,7 @@
 ---
 title: "fireSense_spreadPredict Manual"
 subtitle: "v.1.2.0.9006"
-date: "Last updated: 2026-11-03"
+date: "Last updated: 2026-11-11"
 output:
   bookdown::html_document2:
     toc: true
@@ -123,6 +123,24 @@ Summary of user-visible parameters (Table \@ref(tab:moduleParams-fireSense-sprea
    <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
+   <td style="text-align:left;"> escapeSizeHa </td>
+   <td style="text-align:left;"> numeric </td>
+   <td style="text-align:left;"> 50 </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> Size (ha) at and above which a fire counts as an escape. The ledger rows must have been fitted with this definition, else the module stops (`fireSenseUtils::checkEscapeDefinition()`). Checked to be the same in every module that defines it. </td>
+   <td style="text-align:left;"> TRUE </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> fireCauses </td>
+   <td style="text-align:left;"> character </td>
+   <td style="text-align:left;"> natural,.... </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> Cause groups of the fires that count as escapes (`fireSenseUtils::fireCauseCodes()`); part of the escape definition, checked like `escapeSizeHa`. </td>
+   <td style="text-align:left;"> TRUE </td>
+  </tr>
+  <tr>
    <td style="text-align:left;"> maxFireSpread </td>
    <td style="text-align:left;"> numeric </td>
    <td style="text-align:left;"> 0.276 </td>
@@ -233,6 +251,16 @@ Description of the module outputs (Table \@ref(tab:moduleOutputs-fireSense-sprea
    <td style="text-align:left;"> fireSense_SpreadSD </td>
    <td style="text-align:left;"> SpatRaster&amp;#124;numeric </td>
    <td style="text-align:left;"> The fitted sd of the per-year random effect on logit spread probability (`yearSpreadSD` of the parameter set chosen by `.rep`; 0 if the fit has none), for `fireSense_burn`. One number with one fitted ELF; with several, a raster blended across ELFs with the weights of `fireSense_SpreadPredicted`. </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> fireSense_SpreadFireSD </td>
+   <td style="text-align:left;"> SpatRaster&amp;#124;numeric </td>
+   <td style="text-align:left;"> The fitted sd of the per-fire random effect on spread probability (`fireSpreadSD` of the parameter set chosen by `.rep`; 0 for a ledger row without it), for `fireSense_burn`. Shaped like `fireSense_SpreadSD`: one number with one fitted ELF; with several, a raster of each ELF's value blended with the weights of `fireSense_SpreadPredicted`. </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> fireSense_EscapeDefinition </td>
+   <td style="text-align:left;"> data.frame </td>
+   <td style="text-align:left;"> The escape definition the ledger rows were fitted with (`escapeSizeHa`, `fireCauses`; `fireSenseUtils::escapeDefinition()`), one row per fitted ELF (with its `polygonID`); `NA` for a row fitted before the definition was recorded. Each row has been checked against this run's `escapeSizeHa` and `fireCauses`. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> fireSense_SpreadPowerLaw </td>
