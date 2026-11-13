@@ -30,7 +30,7 @@ test_that("outputs are the expected names and classes", {
   expect_identical(
     outputs[order(names(outputs))],
     c(fireSense_EscapeDefinition = "data.frame", fireSense_SpreadFireSD = "SpatRaster|numeric",
-      fireSense_SpreadLinear = "SpatRaster", fireSense_SpreadParamSet = "integer", fireSense_SpreadPowerLaw = "SpatRaster|numeric", fireSense_SpreadPredicted = "SpatRaster",
+      fireSense_SpreadLinear = "SpatRaster", fireSense_SpreadLink = "character", fireSense_SpreadParamSet = "integer", fireSense_SpreadPowerLaw = "SpatRaster|numeric", fireSense_SpreadPredicted = "SpatRaster",
       fireSense_SpreadSD = "SpatRaster|numeric")
   )
 })
