@@ -72,7 +72,7 @@
       <h1 data-toc-skip>fireSense_spreadPredict Manual</h1>
             <h3 data-toc-skip class="subtitle">v.1.2.0.9008</h3>
             
-            <h4 data-toc-skip class="date">Last updated: 2026-11-11</h4>
+            <h4 data-toc-skip class="date">Last updated: 2026-11-13</h4>
       
 
       <div class="hidden name"><code>fireSense_spreadPredict.Rmd</code></div>
@@ -588,13 +588,24 @@ The escape definition the ledger rows were fitted with (<code>escapeSizeHa</code
 </tr>
 <tr>
 <td style="text-align:left;">
+fireSense_SpreadLink
+</td>
+<td style="text-align:left;">
+character
+</td>
+<td style="text-align:left;">
+Only for a fit made with <code>spreadLink = "powerLaw"</code>, <code>"powerLawSmooth"</code> or <code>"richards"</code> (else NULL): the link the ledger row records, for <code>fireSense_burn</code>. The names of <code>fireSense_SpreadPowerLaw</code> are those of this link (<code><a href="https://rdrr.io/pkg/fireSenseUtils/man/fireSenseUtils-constants.html" class="external-link">fireSenseUtils::spreadLinkParNames</a></code>). Fitted ELFs with different such links cannot be blended: an error.
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
 fireSense_SpreadPowerLaw
 </td>
 <td style="text-align:left;">
 SpatRaster&amp;#124;numeric
 </td>
 <td style="text-align:left;">
-Only for a fit made with <code>spreadLink = "powerLaw"</code> (else NULL): <code>pc</code> (the row’s <code>maxAsymptote</code>), <code>gamma</code>, <code>floor</code> (<code>lowerSpreadProb</code>) and <code>shape</code> of <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/powerLawLink.html" class="external-link">fireSenseUtils::powerLawLink()</a></code>, for <code>fireSense_burn</code>, which adds the year effect to the linear predictor, as the fit does. A numeric vector with one fitted ELF; with several, a 4-layer raster blended like <code>fireSense_SpreadSD</code>.
+Only for a fit made with <code>spreadLink = "powerLaw"</code>, <code>"powerLawSmooth"</code> or <code>"richards"</code> (else NULL): the parameters of its link, named as <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/fireSenseUtils-constants.html" class="external-link">fireSenseUtils::spreadLinkParNames</a></code> says for <code>fireSense_SpreadLink</code>, for <code>fireSense_burn</code>, which adds the year effect to the linear predictor, as the fit does. “powerLaw”: <code>pc</code> (the row’s <code>maxAsymptote</code>), <code>gamma</code>, <code>floor</code> (<code>lowerSpreadProb</code>) and <code>shape</code> of <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/powerLawLink.html" class="external-link">fireSenseUtils::powerLawLink()</a></code>; “powerLawSmooth” also <code>lower</code> (the row’s <code>lowerAsymptote</code>); “richards”: <code>pc</code>, <code>lower</code>, <code>nu</code> (the row’s <code>richardsNu</code>) and <code>B</code>. A numeric vector with one fitted ELF; with several, a raster with one layer per name, blended like <code>fireSense_SpreadSD</code>.
 </td>
 </tr>
 <tr>
@@ -605,7 +616,7 @@ fireSense_SpreadLinear
 SpatRaster
 </td>
 <td style="text-align:left;">
-Only for a fit made with <code>spreadLink = "powerLaw"</code> (else NULL): the linear predictor x of each flammable pixel (covariates % % coefficients), the step before <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/powerLawLink.html" class="external-link">fireSenseUtils::powerLawLink()</a></code> turns it into <code>fireSense_SpreadPredicted</code>; <code>NA</code> where that is. A pixel with a negative x has a spread probability of 0, so <code>fireSense_burn</code> needs x itself to add the year effect there. With several ELFs, blended like <code>fireSense_SpreadPowerLaw</code>.
+Only for a fit made with a link of <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/fireSenseUtils-constants.html" class="external-link">fireSenseUtils::spreadLinearLinks</a></code> (else NULL): the linear predictor x of each flammable pixel (covariates % % coefficients), the step before the link (<code><a href="https://rdrr.io/pkg/fireSenseUtils/man/linearLinkProb.html" class="external-link">fireSenseUtils::linearLinkProb()</a></code>) turns it into <code>fireSense_SpreadPredicted</code>; <code>NA</code> where that is. With <code>"powerLaw"</code> a pixel with a negative x has a spread probability of 0, so <code>fireSense_burn</code> needs x itself to add the year effect there. With several ELFs, blended like <code>fireSense_SpreadPowerLaw</code>.
 </td>
 </tr>
 </tbody>

@@ -1,7 +1,7 @@
 ---
 title: "fireSense_spreadPredict Manual"
 subtitle: "v.1.2.0.9008"
-date: "Last updated: 2026-11-11"
+date: "Last updated: 2026-11-13"
 output:
   bookdown::html_document2:
     toc: true
@@ -263,14 +263,19 @@ Description of the module outputs (Table \@ref(tab:moduleOutputs-fireSense-sprea
    <td style="text-align:left;"> The escape definition the ledger rows were fitted with (`escapeSizeHa`, `fireCauses`; `fireSenseUtils::escapeDefinition()`), one row per fitted ELF (with its `polygonID`); `NA` for a row fitted before the definition was recorded. Each row has been checked against this run's `escapeSizeHa` and `fireCauses`. </td>
   </tr>
   <tr>
+   <td style="text-align:left;"> fireSense_SpreadLink </td>
+   <td style="text-align:left;"> character </td>
+   <td style="text-align:left;"> Only for a fit made with `spreadLink = "powerLaw"`, `"powerLawSmooth"` or `"richards"` (else NULL): the link the ledger row records, for `fireSense_burn`. The names of `fireSense_SpreadPowerLaw` are those of this link (`fireSenseUtils::spreadLinkParNames`). Fitted ELFs with different such links cannot be blended: an error. </td>
+  </tr>
+  <tr>
    <td style="text-align:left;"> fireSense_SpreadPowerLaw </td>
    <td style="text-align:left;"> SpatRaster&amp;#124;numeric </td>
-   <td style="text-align:left;"> Only for a fit made with `spreadLink = "powerLaw"` (else NULL): `pc` (the row's `maxAsymptote`), `gamma`, `floor` (`lowerSpreadProb`) and `shape` of `fireSenseUtils::powerLawLink()`, for `fireSense_burn`, which adds the year effect to the linear predictor, as the fit does. A numeric vector with one fitted ELF; with several, a 4-layer raster blended like `fireSense_SpreadSD`. </td>
+   <td style="text-align:left;"> Only for a fit made with `spreadLink = "powerLaw"`, `"powerLawSmooth"` or `"richards"` (else NULL): the parameters of its link, named as `fireSenseUtils::spreadLinkParNames` says for `fireSense_SpreadLink`, for `fireSense_burn`, which adds the year effect to the linear predictor, as the fit does. "powerLaw": `pc` (the row's `maxAsymptote`), `gamma`, `floor` (`lowerSpreadProb`) and `shape` of `fireSenseUtils::powerLawLink()`; "powerLawSmooth" also `lower` (the row's `lowerAsymptote`); "richards": `pc`, `lower`, `nu` (the row's `richardsNu`) and `B`. A numeric vector with one fitted ELF; with several, a raster with one layer per name, blended like `fireSense_SpreadSD`. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> fireSense_SpreadLinear </td>
    <td style="text-align:left;"> SpatRaster </td>
-   <td style="text-align:left;"> Only for a fit made with `spreadLink = "powerLaw"` (else NULL): the linear predictor x of each flammable pixel (covariates % % coefficients), the step before `fireSenseUtils::powerLawLink()` turns it into `fireSense_SpreadPredicted`; `NA` where that is. A pixel with a negative x has a spread probability of 0, so `fireSense_burn` needs x itself to add the year effect there. With several ELFs, blended like `fireSense_SpreadPowerLaw`. </td>
+   <td style="text-align:left;"> Only for a fit made with a link of `fireSenseUtils::spreadLinearLinks` (else NULL): the linear predictor x of each flammable pixel (covariates % % coefficients), the step before the link (`fireSenseUtils::linearLinkProb()`) turns it into `fireSense_SpreadPredicted`; `NA` where that is. With `"powerLaw"` a pixel with a negative x has a spread probability of 0, so `fireSense_burn` needs x itself to add the year effect there. With several ELFs, blended like `fireSense_SpreadPowerLaw`. </td>
   </tr>
 </tbody>
 </table>

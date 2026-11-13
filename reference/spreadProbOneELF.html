@@ -67,7 +67,10 @@
 <span>  covCentre <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  climateRef <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  powerLawGamma <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  powerLawShape <span class="op">=</span> <span class="fu">fireSenseUtils</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/fireSenseUtils/man/fireSenseUtils-constants.html" class="external-link">spreadPowerLawShape</a></span></span>
+<span>  powerLawShape <span class="op">=</span> <span class="fu">fireSenseUtils</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/fireSenseUtils/man/fireSenseUtils-constants.html" class="external-link">spreadPowerLawShape</a></span>,</span>
+<span>  link <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">powerLawGamma</span><span class="op">)</span><span class="op">)</span> <span class="st">"powerLaw"</span>,</span>
+<span>  lowerAsymptote <span class="op">=</span> <span class="fu">fireSenseUtils</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/fireSenseUtils/man/spreadProbBounds.html" class="external-link">spreadProbFloor</a></span>,</span>
+<span>  richardsNu <span class="op">=</span> <span class="fu">fireSenseUtils</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/fireSenseUtils/man/fireSenseUtils-constants.html" class="external-link">spreadRichardsNu</a></span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -120,11 +123,22 @@ applies that link (<code><a href="https://rdrr.io/pkg/fireSenseUtils/man/powerLa
 <dd><p>the ELF's <code>powerLawShape_spread</code> (<code><a href="ledgerPowerLawShape.html">ledgerPowerLawShape()</a></code>): the <code>shape</code> of the link, with
 <code>powerLawGamma</code>; 1 (the original link) by default.</p></dd>
 
+
+<dt id="arg-link">link<a class="anchor" aria-label="anchor" href="#arg-link"></a></dt>
+<dd><p>the ELF's link when it is one of <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/fireSenseUtils-constants.html" class="external-link">fireSenseUtils::spreadLinearLinks</a></code> (<code><a href="ledgerLinkArgs.html">ledgerLinkArgs()</a></code>); <code>NULL</code> (any
+other link). By default <code>"powerLaw"</code> when <code>powerLawGamma</code> is given, the link of a row written before the
+others existed.</p></dd>
+
+
+<dt id="arg-lowerasymptote-richardsnu">lowerAsymptote, richardsNu<a class="anchor" aria-label="anchor" href="#arg-lowerasymptote-richardsnu"></a></dt>
+<dd><p>the ELF's <code>lowerAsymptote_spread</code> and <code>richardsNu_spread</code> (<code><a href="ledgerLowerAsymptote.html">ledgerLowerAsymptote()</a></code>,
+<code><a href="ledgerRichardsNu.html">ledgerRichardsNu()</a></code>): with <code>"powerLawSmooth"</code> and <code>"richards"</code>, the lower asymptote, and <code>nu</code> of <code>"richards"</code>.</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p><code>data.table</code> with <code>pixelID</code> and <code>spreadProb</code>, from the one parameter set in <code>params</code>; with
-<code>powerLawGamma</code> also <code>linearPredictor</code>, the <code>x</code> that <code>spreadProb</code> is the power-law link of.</p>
+    <p><code>data.table</code> with <code>pixelID</code> and <code>spreadProb</code>, from the one parameter set in <code>params</code>; with a <code>link</code>
+also <code>linearPredictor</code>, the <code>x</code> that <code>spreadProb</code> is the link of.</p>
     </div>
 
   </div>
