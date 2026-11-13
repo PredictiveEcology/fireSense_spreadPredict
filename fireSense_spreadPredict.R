@@ -70,7 +70,7 @@ defineModule(sim, list(
                               "`pixelID` is the cell index of `flammableRTM`.")),
     expectsInput(objectName = "rasterToMatchLargeELF", objectClass = "SpatRaster", sourceURL = NA,
                  desc = paste("Only with several fitted ELFs: each pixel's ELF (`ELFind`), on the grid of",
-                              "`flammableRTM`, from `fireSense_ELFs` with a `studyAreaLarge`.")),
+                              "`flammableRTM`, from `fireSense_ELFs` with a `studyArea_fireSense`.")),
     expectsInput(objectName = "flammableRTM", objectClass = "SpatRaster", sourceURL = NA,
                  desc = "Binary raster, 1 where the pixel is flammable. Template for `fireSense_SpreadPredicted`.")
   ),
@@ -299,7 +299,7 @@ spreadPredictRun <- function(sim) {
 ELFblendWeights <- function(elfRas, template, pixelID, ids, width) {
   if (is.null(elfRas))
     stop("fireSense_spreadPredict: sim$studyAreaWithSpreadParams has several ELFs, so each pixel's ELF ",
-         "must come from sim$rasterToMatchLargeELF (fireSense_ELFs, with a studyAreaLarge); it is missing",
+         "must come from sim$rasterToMatchLargeELF (fireSense_ELFs, with a studyArea_fireSense); it is missing",
          call. = FALSE)
   if (!isTRUE(terra::compareGeom(elfRas, template, stopOnError = FALSE)))
     stop("fireSense_spreadPredict: sim$rasterToMatchLargeELF is not on the grid of sim$flammableRTM",
