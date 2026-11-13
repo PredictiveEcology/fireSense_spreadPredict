@@ -566,19 +566,25 @@ ledgerSpreadLink <- function(sa, i) {
 
 #' A number of one ledger row, for the links that record it
 #'
+#' The row's `lowerAsymptote_spread` and `richardsNu_spread` are checked together by
+#' `fireSenseUtils::checkLinkParams()`, the check `fireSense_spreadFit` makes of its parameters; an invalid or missing
+#' value stops, naming the row.
+#'
 #' @param sa `sim$studyAreaWithSpreadParams`, one row per ELF.
 #' @param i integer; the row.
 #' @param col the ledger column.
 #' @param links the links that write `col`; any other row gives `NULL`.
-#' @param ok a function of the value: `TRUE` when it is valid. An invalid value stops.
 #' @return The value, or `NULL` for a row of another link.
-ledgerLinkNumber <- function(sa, i, col, links, ok) {
-  if (!any(ledgerSpreadLink(sa, i) %in% links)) return(NULL)
-  v <- if (col %in% names(sa)) sa[[col]][[i]]
-  if (!(is.numeric(v) && length(v) == 1L && is.finite(v) && ok(v)))
-    stop("fireSense_spreadPredict: ledger row ", i, " has spreadLink '", ledgerSpreadLink(sa, i), "' but no valid '", col,
-         "' (", format(v), ")", call. = FALSE)
-  v
+ledgerLinkNumber <- function(sa, i, col, links) {
+  link <- ledgerSpreadLink(sa, i)
+  if (!any(link %in% links)) return(NULL)
+  num <- function(cn) if (cn %in% names(sa)) sa[[cn]][[i]]
+  tryCatch(fireSenseUtils::checkLinkParams(link, num(fireSenseUtils::spreadFitLowerAsymptoteTxt),
+                                           num(fireSenseUtils::spreadFitRichardsNuTxt)),
+           error = function(e) stop("fireSense_spreadPredict: ledger row ", i, " has spreadLink '", link, "': ",
+                                    conditionMessage(e), " (columns '", fireSenseUtils::spreadFitLowerAsymptoteTxt, "', '",
+                                    fireSenseUtils::spreadFitRichardsNuTxt, "')", call. = FALSE))
+  num(col)
 }
 
 #' The lower asymptote of one ledger row
@@ -589,8 +595,7 @@ ledgerLinkNumber <- function(sa, i, col, links, ok) {
 #' @inheritParams ledgerLinkNumber
 #' @return A number from 0 to `fireSenseUtils::spreadProbFloor`; `NULL` for a row of another link.
 ledgerLowerAsymptote <- function(sa, i)
-  ledgerLinkNumber(sa, i, fireSenseUtils::spreadFitLowerAsymptoteTxt, fireSenseUtils::spreadAsymptoteLinks,
-                   function(v) v >= 0 && v <= fireSenseUtils::spreadProbFloor)
+  ledgerLinkNumber(sa, i, fireSenseUtils::spreadFitLowerAsymptoteTxt, fireSenseUtils::spreadAsymptoteLinks)
 
 #' The `nu` of one ledger row
 #'
@@ -599,7 +604,7 @@ ledgerLowerAsymptote <- function(sa, i)
 #' @inheritParams ledgerLinkNumber
 #' @return A number, 0 or more; `NULL` for a row of another link.
 ledgerRichardsNu <- function(sa, i)
-  ledgerLinkNumber(sa, i, fireSenseUtils::spreadFitRichardsNuTxt, "richards", function(v) v >= 0)
+  ledgerLinkNumber(sa, i, fireSenseUtils::spreadFitRichardsNuTxt, "richards")
 
 #' The link of one ledger row and its parameters, as the arguments of `spreadProbOneELF()`
 #'

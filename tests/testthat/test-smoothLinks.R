@@ -80,12 +80,12 @@ test_that("rows without the columns their link needs stop; the helpers read the 
   expect_identical(ledgerLinkArgs(sa, 1L)$link, "richards")
   expect_false("powerLawGamma" %in% names(ledgerLinkArgs(sa, 1L)))
   sa[[nuColSL]] <- NULL
-  expect_error(ledgerRichardsNu(sa, 1L), "richardsNu_spread")
+  expect_error(ledgerRichardsNu(sa, 1L), "richardsNu must be")
   sa <- inputsSL("powerLawSmooth")$studyAreaWithSpreadParams
   sa[[lowerColSL]] <- 0.5
-  expect_error(ledgerLowerAsymptote(sa, 1L), "lowerAsymptote_spread")
+  expect_error(ledgerLowerAsymptote(sa, 1L), "lowerAsymptote must be")
   sa[[lowerColSL]] <- NULL
-  expect_error(ledgerLowerAsymptote(sa, 1L), "lowerAsymptote_spread")
+  expect_error(ledgerLowerAsymptote(sa, 1L), "lowerAsymptote must be")
   expect_null(ledgerRichardsNu(inputsSL("powerLawSmooth")$studyAreaWithSpreadParams, 1L))
   ## the other links have none
   expect_null(ledgerLowerAsymptote(toyInputs()$studyAreaWithSpreadParams, 1L))
