@@ -108,7 +108,7 @@ defineModule(sim, list(
                                "linear predictor, as the fit does. \"powerLaw\": `pc` (the row's",
                                "`maxAsymptote`), `gamma`, `floor` (`lowerSpreadProb`) and `shape` of",
                                "`fireSenseUtils::powerLawLink()`; \"powerLawSmooth\" also `lower` (the row's",
-                               "`lowerAsymptote`); \"richards\": `pc`, `lower`, `nu` (the row's `richardsNu`) and `B`.",
+                               "`lowerAsymptote`, at least `fireSenseUtils::spreadLowerAsymptoteMin`, 0.001: `fireSenseUtils::checkLinkParams()`); \"richards\": `pc`, `lower`, `nu` (the row's `richardsNu`) and `B`.",
                                "A numeric vector with one fitted ELF; with several, a raster with one layer per name,",
                                "blended like `fireSense_SpreadSD`.")),
     createsOutput(objectName = "fireSense_SpreadLinear", objectClass = "SpatRaster",
