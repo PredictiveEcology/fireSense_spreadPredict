@@ -29,7 +29,7 @@ xSL <- function() {
 }
 
 test_that("a powerLawSmooth row predicts the smooth link with its gamma and lower asymptote", {
-  for (L in c(0, 0.05, 0.13)) {
+  for (L in c(fireSenseUtils::spreadLowerAsymptoteMin, 0.05, 0.13)) {
     sim <- toyRun(inputsSL("powerLawSmooth", lower = L, gamma = 3))
     v <- predVals(sim)
     expect_equal(v[cellsSL], fireSenseUtils::powerLawSmoothLink(xSL(), 0.25, 3, 0.13, 1, L), tolerance = 1e-9)
@@ -84,6 +84,8 @@ test_that("rows without the columns their link needs stop; the helpers read the 
   sa <- inputsSL("powerLawSmooth")$studyAreaWithSpreadParams
   sa[[lowerColSL]] <- 0.5
   expect_error(ledgerLowerAsymptote(sa, 1L), "lowerAsymptote must be")
+  sa[[lowerColSL]] <- 0     # a lower asymptote of 0 is never accepted
+  expect_error(ledgerLowerAsymptote(sa, 1L), "never 0")
   sa[[lowerColSL]] <- NULL
   expect_error(ledgerLowerAsymptote(sa, 1L), "lowerAsymptote must be")
   expect_null(ledgerRichardsNu(inputsSL("powerLawSmooth")$studyAreaWithSpreadParams, 1L))
@@ -96,13 +98,13 @@ test_that("with several ELFs of one new link the parameters blend; with differen
   ins <- multiInputs()
   ins$studyAreaWithSpreadParams$params <- lapply(ins$studyAreaWithSpreadParams$params, function(p) { p$MDC <- 1; p })
   ins$studyAreaWithSpreadParams[[linkColSL]] <- c("richards", "richards")
-  ins$studyAreaWithSpreadParams[[lowerColSL]] <- c(0, 0.1)
+  ins$studyAreaWithSpreadParams[[lowerColSL]] <- c(fireSenseUtils::spreadLowerAsymptoteMin, 0.1)
   ins$studyAreaWithSpreadParams[[nuColSL]] <- c(0.5, 2)
   sim <- toyRun(ins, params = list(ELFblendWidth = 20000))
   pl <- sim$fireSense_SpreadPowerLaw
   expect_identical(names(pl), c("pc", "lower", "nu", "B"))
   lo <- terra::values(pl[["lower"]], mat = FALSE)
-  expect_equal(lo[1], 0); expect_equal(lo[10], 0.1)
+  expect_equal(lo[1], fireSenseUtils::spreadLowerAsymptoteMin); expect_equal(lo[10], 0.1)
   expect_identical(sim$fireSense_SpreadLink, "richards")
   ins$studyAreaWithSpreadParams[[linkColSL]] <- c("richards", "powerLawSmooth")
   ins$studyAreaWithSpreadParams[[gammaColSL]] <- c(NA, 2)
