@@ -1,7 +1,7 @@
 ---
 title: "fireSense_spreadPredict Manual"
 subtitle: "v.1.2.0.9009"
-date: "Last updated: 2026-11-13"
+date: "Last updated: 2026-11-14"
 output:
   bookdown::html_document2:
     toc: true
@@ -73,7 +73,7 @@ Table \@ref(tab:moduleInputs-fireSense-spreadPredict) shows the full list of mod
   <tr>
    <td style="text-align:left;"> rasterToMatchLargeELF </td>
    <td style="text-align:left;"> SpatRaster </td>
-   <td style="text-align:left;"> Only with several fitted ELFs: each pixel's ELF (`ELFind`), on the grid of `flammableRTM`, from `fireSense_ELFs` with a `studyAreaLarge`. </td>
+   <td style="text-align:left;"> Only with several fitted ELFs: each pixel's ELF (`ELFind`), on the grid of `flammableRTM`, from `fireSense_ELFs` with a `studyArea_fireSense`. </td>
    <td style="text-align:left;"> NA </td>
   </tr>
   <tr>
