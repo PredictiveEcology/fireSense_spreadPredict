@@ -227,10 +227,15 @@ spreadPredictRun <- function(sim) {
     ps <- paramSetsForRep(sim, sa, rep)
     sa$params[[ps$own]] <- ps$params
     sim$fireSense_SpreadParamSet[[ps$own]] <- ps$set
-    set.seed(ps$k)   ## the same random numbers for every set, for fireSense_burn
-    key <- list(ps$set, covs)   ## `time(sim)` is not in it: with one covariate table it does not change the result
+    ## the same random numbers for every set (not in the seed), but not for every year, for fireSense_burn
+    set.seed(paramSetsSeed(P(sim)$.runInitialTime, ps$k, ps$id))
+    ## everything the outputs depend on; `time(sim)` is not in it: with one covariate table it does not change them
+    key <- list(P(sim)$paramSets, ps$set, sim$fireSense_SpreadParamSet, covs, sa[setdiff(names(sa), "params")],
+                ps$params, terra::values(sim$flammableRTM, mat = FALSE),
+                if (!is.null(sim$rasterToMatchLargeELF)) terra::values(sim$rasterToMatchLargeELF, mat = FALSE),
+                P(sim)$ELFblendWidth, P(sim)$lowerSpreadProb, P(sim)$maxFireSpread)
     if (identical(mod$surface$key, key)) {
-      for (nm in surfaceOutputs) sim[[nm]] <- mod$surface$outputs[[nm]]
+      for (nm in surfaceOutputs) sim[[nm]] <- unwrapIfRaster(mod$surface$outputs[[nm]])
       return(invisible(sim))
     }
   }
@@ -310,7 +315,7 @@ spreadPredictRun <- function(sim) {
   sim$fireSense_SpreadPredicted[pred$pixelID] <- pred$spreadProb
 
   if (!is.na(P(sim)$paramSets))
-    mod$surface <- list(key = key, outputs = lapply(stats::setNames(surfaceOutputs, surfaceOutputs), function(nm) sim[[nm]]))
+    mod$surface <- list(key = key, outputs = lapply(stats::setNames(surfaceOutputs, surfaceOutputs), function(nm) wrapIfRaster(sim[[nm]])))
 
   invisible(sim)
 }
@@ -329,9 +334,10 @@ spreadPredictRun <- function(sim) {
 paramSetsForRep <- function(sim, sa, rep) {
   idCol <- fireSenseUtils::polygonIDTxt
   own <- if (NROW(sa) == 1L) 1L else match(as.character(sim$.ELFind), as.character(sa[[idCol]]))
-  if (is.na(own))
-    stop("fireSense_spreadPredict: paramSets needs sim$.ELFind to be one of the ELFs of ",
-         "sim$studyAreaWithSpreadParams (", paste(sa[[idCol]], collapse = ", "), ")", call. = FALSE)
+  if (length(own) != 1L || is.na(own))
+    stop("fireSense_spreadPredict: paramSets with several fitted ELFs needs sim$.ELFind to be ONE of the ELFs of ",
+         "sim$studyAreaWithSpreadParams (", paste(sa[[idCol]], collapse = ", "), "); it is ",
+         if (is.null(sim$.ELFind)) "missing" else paste(sim$.ELFind, collapse = ", "), call. = FALSE)
   path <- P(sim)$paramSets
   if (!identical(mod$paramSetsFile$path, path)) {
     sets <- if (grepl("[.]csv$", path, ignore.case = TRUE)) data.table::fread(path, data.table = FALSE) else readRDS(path)
@@ -345,14 +351,34 @@ paramSetsForRep <- function(sim, sa, rep) {
   per <- P(sim)$repsPerSet
   set <- paramSetIndex(NROW(sets), ceiling(rep / per))
   ledgerPars <- names(sa$params[[own]])
-  lacks <- setdiff(ledgerPars, c(names(sets), fireSenseUtils::spreadRandomEffectTxt))
+  lacks <- setdiff(ledgerPars, names(sets))
   if (length(lacks))
-    stop("fireSense_spreadPredict: the paramSets file ", path, " lacks the coefficient(s) ",
-         paste(lacks, collapse = ", "), " that the ledger row of ELF ", own, " (and so the spread formula) uses",
+    stop("fireSense_spreadPredict: the paramSets file ", path, " lacks the column(s) ",
+         paste(lacks, collapse = ", "), " that the ledger row of ELF ", own, " has (a coefficient the spread formula uses, ",
+         "or a random-effect sd the run needs)",
          call. = FALSE)
   keep <- intersect(names(sets), c(ledgerPars, fireSenseUtils::spreadRandomEffectTxt))
-  list(own = own, set = set, k = as.integer(((rep - 1L) %% per) + 1L), params = sets[set, keep, drop = FALSE])
+  list(own = own, set = set, k = as.integer(((rep - 1L) %% per) + 1L), params = sets[set, keep, drop = FALSE],
+       id = if (idCol %in% names(sa)) as.character(sa[[idCol]][own]) else "")
 }
+
+#' The random seed of replicate `k` of a year and ELF
+#'
+#' Not a function of the parameter set, so every set gets the same random numbers (common random numbers);
+#' it is of the year and the ELF, so a hindcast's years and ELFs do not repeat each other's draws.
+#'
+#' @param year numeric; the job's year (`.runInitialTime`).
+#' @param k integer; the replicate within its set.
+#' @param id character; the simulated ELF (`""` if unknown).
+#' @return An integer for `set.seed()`.
+paramSetsSeed <- function(year, k, id) {
+  idHash <- sum(utf8ToInt(id) * seq_len(nchar(id)))
+  as.integer((round(year) * 1000003 + k * 7919 + idHash * 104729) %% .Machine$integer.max)
+}
+
+## a SpatRaster is held by a pointer, so what `mod$surface` keeps is a copy
+wrapIfRaster <- function(x) if (inherits(x, "SpatRaster")) terra::wrap(x) else x
+unwrapIfRaster <- function(x) if (inherits(x, "PackedSpatRaster")) terra::unwrap(x) else x
 
 #' Each ELF's weight at each pixel
 #'
