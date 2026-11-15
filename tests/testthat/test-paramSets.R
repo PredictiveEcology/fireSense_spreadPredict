@@ -57,8 +57,9 @@ test_that("reps of one set reuse its surface: it is computed once per set", {
   surf <- sim@.xData$.modObjs[[moduleName]]$surface
   expect_identical(surf$key[[2]], 1L)
   mo <- sim@.xData$.modObjs[[moduleName]]
-  r <- terra::unwrap(mo$surface$outputs$fireSense_SpreadPredicted); r[1] <- 99
-  mo$surface$outputs$fireSense_SpreadPredicted <- terra::wrap(r)
+  r <- mo$surface$outputs$fireSense_SpreadPredicted; r[1] <- 99
+  mo$surface$outputs$fireSense_SpreadPredicted <- r
+  mo$surface$samples <- lapply(mo$surface$outputs, rasterSample)
   end(sim) <- 2
   sim <- SpaDES.core::spades(sim, debug = FALSE)
   expect_identical(predVals(sim)[1], 99)
@@ -135,4 +136,46 @@ test_that("a neighbour ELF with 2 rows still cycles with the replicate: the cach
   expect_identical(sets, list(c(1L, 1L), c(2L, 1L), c(1L, 1L)))
   expect_equal(vals[[1]], 0.13 + (0.25 - 0.13) / 2, tolerance = 1e-9)
   expect_equal(vals[[2]], 0.13 + (0.35 - 0.13) / 2, tolerance = 1e-9)   ## ELF A's row 2, not rep 1's surface
+})
+
+test_that("a duplicate ELF id in the ledger rows stops", {
+  ins <- multiInputs(); ins$.ELFind <- "B"
+  sa <- ins$studyAreaWithSpreadParams; sa$polygonID <- c("B", "B"); ins$studyAreaWithSpreadParams <- sa
+  expect_error(toyRun(ins, params = list(ELFblendWidth = 6000, paramSets = setsFile(sa$params[[2]]))), "2 rows for ELF B")
+})
+
+test_that("a file of ledger rows with none for this ELF stops with a clear message", {
+  ins <- multiInputs(); ins$.ELFind <- "B"
+  led <- data.frame(polygonID = "A"); led$params <- list(ins$studyAreaWithSpreadParams$params[[1]])
+  expect_error(toyRun(ins, params = list(ELFblendWidth = 6000, paramSets = setsFile(led))),
+               "ledger rows have none for ELF B")
+  ## and with rows for it, they are the sets
+  led <- data.frame(polygonID = c("A", "B")); led$params <- ins$studyAreaWithSpreadParams$params
+  expect_identical(unname(toyRun(ins, params = list(ELFblendWidth = 6000, paramSets = setsFile(led)))$fireSense_SpreadParamSet), c(1L, 1L))
+})
+
+test_that("a raster input changes the surface key only when it changes, without reading all its values", {
+  r <- terra::rast(nrows = 100, ncols = 100, vals = 1)
+  e <- new.env(); e$rasterStamp <- NULL
+  v <- function(x) { mod <- e; environment(rasterVersion) <- environment(); rasterVersion("r", x) }
+  v1 <- v(r)
+  expect_identical(v(r), v1)                                  ## the same object: the same version, no re-read
+  r2 <- r; r2[1] <- 0
+  expect_gt(v(r2), v1)                                        ## a new object
+  v2 <- v(r2)
+  terra::set.values(r2, 1L, 5)                                ## an in-place edit, same pointer
+  expect_gt(v(r2), v2)
+  expect_null(v(NULL))
+})
+
+test_that("a changed flammableRTM recomputes the surface of the same set", {
+  p <- twoSets()
+  sim <- toySim(toyInputs(), params = list(paramSets = setsFile(p), repsPerSet = 2L, paramSetByReplicate = TRUE))
+  sim <- SpaDES.core::spades(sim, debug = FALSE)
+  v1 <- predVals(sim)
+  fl <- sim$flammableRTM; fl[1] <- 0; sim$flammableRTM <- fl   ## cell 1 stops being flammable ...
+  covs <- sim$fireSense_SpreadCovariates; sim$fireSense_SpreadCovariates <- covs[covs$pixelID != 1L, ]
+  end(sim) <- 2; sim <- SpaDES.core::spades(sim, debug = FALSE)
+  expect_identical(unname(sim$fireSense_SpreadParamSet), 1L)
+  expect_true(is.na(predVals(sim)[1])); expect_false(is.na(v1[1]))
 })

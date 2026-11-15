@@ -231,11 +231,12 @@ spreadPredictRun <- function(sim) {
     set.seed(paramSetsSeed(P(sim)$.runInitialTime, ps$k, ps$id))
     ## everything the outputs depend on; `time(sim)` is not in it: with one covariate table it does not change them
     key <- list(P(sim)$paramSets, ps$set, sim$fireSense_SpreadParamSet, covs, sa[setdiff(names(sa), "params")],
-                ps$params, terra::values(sim$flammableRTM, mat = FALSE),
-                if (!is.null(sim$rasterToMatchLargeELF)) terra::values(sim$rasterToMatchLargeELF, mat = FALSE),
+                ps$params, rasterVersion("flammableRTM", sim$flammableRTM),
+                rasterVersion("rasterToMatchLargeELF", sim$rasterToMatchLargeELF),
                 P(sim)$ELFblendWidth, P(sim)$lowerSpreadProb, P(sim)$maxFireSpread)
-    if (identical(mod$surface$key, key)) {
-      for (nm in surfaceOutputs) sim[[nm]] <- unwrapIfRaster(mod$surface$outputs[[nm]])
+    if (identical(mod$surface$key, key) &&
+        identical(mod$surface$samples, lapply(mod$surface$outputs, rasterSample))) {   ## unedited since stored
+      for (nm in surfaceOutputs) sim[[nm]] <- mod$surface$outputs[[nm]]
       return(invisible(sim))
     }
   }
@@ -315,7 +316,11 @@ spreadPredictRun <- function(sim) {
   sim$fireSense_SpreadPredicted[pred$pixelID] <- pred$spreadProb
 
   if (!is.na(P(sim)$paramSets))
-    mod$surface <- list(key = key, outputs = lapply(stats::setNames(surfaceOutputs, surfaceOutputs), function(nm) wrapIfRaster(sim[[nm]])))
+  {
+    outs <- lapply(stats::setNames(surfaceOutputs, surfaceOutputs),
+                   function(nm) if (inherits(sim[[nm]], "SpatRaster")) terra::deepcopy(sim[[nm]]) else sim[[nm]])
+    mod$surface <- list(key = key, outputs = outs, samples = lapply(outs, rasterSample))
+  }
 
   invisible(sim)
 }
@@ -333,18 +338,26 @@ spreadPredictRun <- function(sim) {
 #'   within the set) and `params` (the one-row `data.frame`).
 paramSetsForRep <- function(sim, sa, rep) {
   idCol <- fireSenseUtils::polygonIDTxt
-  own <- if (NROW(sa) == 1L) 1L else match(as.character(sim$.ELFind), as.character(sa[[idCol]]))
-  if (length(own) != 1L || is.na(own))
+  elf <- as.character(sim$.ELFind)
+  own <- if (NROW(sa) == 1L) 1L else if (length(elf) == 1L && !is.na(elf)) which(as.character(sa[[idCol]]) == elf) else integer()
+  if (length(own) > 1L)
+    stop("fireSense_spreadPredict: sim$studyAreaWithSpreadParams has ", length(own), " rows for ELF ", elf,
+         "; paramSets needs exactly one", call. = FALSE)
+  if (length(own) != 1L)
     stop("fireSense_spreadPredict: paramSets with several fitted ELFs needs sim$.ELFind to be ONE of the ELFs of ",
          "sim$studyAreaWithSpreadParams (", paste(sa[[idCol]], collapse = ", "), "); it is ",
          if (is.null(sim$.ELFind)) "missing" else paste(sim$.ELFind, collapse = ", "), call. = FALSE)
   path <- P(sim)$paramSets
   if (!identical(mod$paramSetsFile$path, path)) {
     sets <- if (grepl("[.]csv$", path, ignore.case = TRUE)) data.table::fread(path, data.table = FALSE) else readRDS(path)
-    if (is.data.frame(sets) && "params" %in% names(sets)) {   ## ledger rows
+    isLedger <- is.data.frame(sets) && "params" %in% names(sets)
+    if (isLedger) {   ## ledger rows
       if (idCol %in% names(sets)) sets <- sets[as.character(sets[[idCol]]) %in% as.character(sa[[idCol]][own]), , drop = FALSE]
       sets <- do.call(rbind, lapply(sets$params, as.data.frame))
     }
+    if (!NROW(sets))
+      stop("fireSense_spreadPredict: the paramSets file ", path, " has no parameter set",
+           if (isLedger) paste0(" (the ledger rows have none for ELF ", sa[[idCol]][own], ")"), call. = FALSE)
     mod$paramSetsFile <- list(path = path, sets = as.data.frame(sets))
   }
   sets <- mod$paramSetsFile$sets
@@ -376,9 +389,37 @@ paramSetsSeed <- function(year, k, id) {
   as.integer((round(year) * 1000003 + k * 7919 + idHash * 104729) %% .Machine$integer.max)
 }
 
-## a SpatRaster is held by a pointer, so what `mod$surface` keeps is a copy
-wrapIfRaster <- function(x) if (inherits(x, "SpatRaster")) terra::wrap(x) else x
-unwrapIfRaster <- function(x) if (inherits(x, "PackedSpatRaster")) terra::unwrap(x) else x
+#' Values of a raster at up to 1000 evenly spaced cells
+#'
+#' A cheap check that a raster has not been edited in place (`terra::set.values()`): reading all the values of
+#' a 20-million-cell raster takes about as long as predicting.
+#'
+#' @param r A `SpatRaster`, or anything else (returned as `NULL`).
+#' @return The values, or `NULL`.
+rasterSample <- function(r) {
+  if (!inherits(r, "SpatRaster")) return(NULL)
+  n <- terra::ncell(r)
+  r[unique(round(seq(1, n, length.out = min(n, 1000L))))][[1]]
+}
+
+#' A number that changes when a raster input changes
+#'
+#' The version of `r` only changes with a new `SpatRaster` object (terra's `[<-` and `values<-` make one) or
+#' different sampled values (`rasterSample()`); `mod$rasterStamp` keeps the last object, so its address cannot be
+#' reused by another. It is for the key of `mod$surface`, so the full raster is not read every replicate.
+#'
+#' @param name character; `mod$rasterStamp` entry.
+#' @param r A `SpatRaster`, or `NULL`.
+#' @return An integer; `NULL` for `NULL`.
+rasterVersion <- function(name, r) {
+  if (is.null(r)) return(NULL)
+  cur <- mod$rasterStamp[[name]]
+  smp <- rasterSample(r)
+  if (is.null(cur) || !identical(cur$obj@pntr, r@pntr) || !identical(cur$sample, smp))
+    cur <- list(obj = r, sample = smp, version = (if (is.null(cur)) 0L else cur$version) + 1L)
+  mod$rasterStamp[[name]] <- cur
+  cur$version
+}
 
 #' Each ELF's weight at each pixel
 #'
