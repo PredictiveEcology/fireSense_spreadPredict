@@ -16,8 +16,9 @@ test_that("inputs are the expected names and classes", {
   md <- SpaDES.core::moduleMetadata(module = moduleName, path = modulePath)
   inputs <- stats::setNames(md$inputObjects$objectClass, md$inputObjects$objectName)
   expect_identical(
-    inputs[order(names(inputs))],
-    c(covMinMax_spread           = "data.table",
+    inputs[order(names(inputs), method = "radix")],
+    c(.ELFind                    = "character",
+      covMinMax_spread           = "data.table",
       fireSense_SpreadCovariates = "data.table",
       flammableRTM               = "SpatRaster",
       rasterToMatchLargeELF      = "SpatRaster")
@@ -49,11 +50,11 @@ paramTable <- function(md) {
 test_that("parameters have the expected names, classes and defaults", {
   md <- SpaDES.core::moduleMetadata(module = moduleName, path = modulePath)
   expected <- data.frame(
-    class   = c("integer", "numeric", "numeric", "numeric", "character", "logical", "numeric", "numeric", "character", "numeric", "numeric", "logical"),
+    class   = c("integer", "numeric", "numeric", "numeric", "character", "logical", "numeric", "numeric", "character", "numeric", "numeric", "logical", "character", "integer"),
     ## .runInitialTime defaults to start(sim), which is 0 when only metadata is parsed
-    default = c("1L", "0", "1", "NA", "NA", "FALSE", "20000", "50", "c(\"natural\", \"unknown\")", "0.13", "0.276", "FALSE"),
+    default = c("1L", "0", "1", "NA", "NA", "FALSE", "20000", "50", "c(\"natural\", \"unknown\")", "0.13", "0.276", "FALSE", "NA", "1L"),
     row.names = c(".rep", ".runInitialTime", ".runInterval", ".saveInitialTime", ".studyAreaName", ".useCache",
-                  "ELFblendWidth", "escapeSizeHa", "fireCauses", "lowerSpreadProb", "maxFireSpread", "paramSetByReplicate")
+                  "ELFblendWidth", "escapeSizeHa", "fireCauses", "lowerSpreadProb", "maxFireSpread", "paramSetByReplicate", "paramSets", "repsPerSet")
   )
   expect_identical(paramTable(md), expected)
 })
