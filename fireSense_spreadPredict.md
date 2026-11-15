@@ -1,7 +1,7 @@
 ---
 title: "fireSense_spreadPredict Manual"
-subtitle: "v.1.2.0.9009"
-date: "Last updated: 2026-11-14"
+subtitle: "v.1.2.0.9010"
+date: "Last updated: 2026-11-15"
 output:
   bookdown::html_document2:
     toc: true
@@ -77,6 +77,12 @@ Table \@ref(tab:moduleInputs-fireSense-spreadPredict) shows the full list of mod
    <td style="text-align:left;"> NA </td>
   </tr>
   <tr>
+   <td style="text-align:left;"> .ELFind </td>
+   <td style="text-align:left;"> character </td>
+   <td style="text-align:left;"> The simulated ELF, as in `fireSense_dataPrepPredict`. Only used with `paramSets` and several fitted ELFs, to find the simulated ELF's row. </td>
+   <td style="text-align:left;"> NA </td>
+  </tr>
+  <tr>
    <td style="text-align:left;"> flammableRTM </td>
    <td style="text-align:left;"> SpatRaster </td>
    <td style="text-align:left;"> Binary raster, 1 where the pixel is flammable. Template for `fireSense_SpreadPredicted`. </td>
@@ -145,6 +151,24 @@ Summary of user-visible parameters (Table \@ref(tab:moduleParams-fireSense-sprea
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Upper limit on `spreadProb` used when fitting (default `fireSenseUtils::spreadProbCeiling`). Here it is only checked to be the same in every module that defines it. </td>
+   <td style="text-align:left;"> TRUE </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> paramSets </td>
+   <td style="text-align:left;"> character </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> Path to an `.rds` or `.csv` of spread parameter vectors, one per row, for the simulated ELF (`sim$.ELFind`; the only row with one ELF): e.g. a DEoptim population, or the `params` of ledger rows of another `fitFileSuffix` (a table with a `params` list column, its rows for this ELF). They replace the simulated ELF's rows of the ledger; neighbour ELFs keep theirs, so blending is unchanged. The link, lower asymptote, `gamma` and covariate centres still come from the ledger row. A set must have every coefficient the ledger row has, else the module stops. `NA` uses the ledger rows. Replicate r uses set `ceiling(r / repsPerSet)` (cycling through the sets), and calls `set.seed(k)` with k the replicate's number within its set, so every set gets the same random numbers in `fireSense_burn` (common random numbers). </td>
+   <td style="text-align:left;"> TRUE </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> repsPerSet </td>
+   <td style="text-align:left;"> integer </td>
+   <td style="text-align:left;"> 1 </td>
+   <td style="text-align:left;"> 1 </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> With `paramSets`: the number of replicates that use each set. Not used otherwise. </td>
    <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
