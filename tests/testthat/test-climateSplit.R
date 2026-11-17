@@ -27,6 +27,20 @@ test_that("a split fit predicts from the year's median over the burnable pixels 
   expect_equal(v[cells <- c(1, 2, 3, 4, 6, 7, 8)], handLogistic3(x), tolerance = 1e-7)
 })
 
+test_that("a non-flammable row in the covariate table is left out of the median, as the fit's burnable pixels are", {
+  covs <- toyCovariates()
+  extra <- data.table::data.table(pixelID = 5L, MDC = 5000, youngAge = 0, fuelA = 0)   # cell 5 of the toy flammableRTM is 0
+  withExtra <- data.table::rbindlist(list(covs, extra))
+  run <- function(cv) {
+    ins <- toyInputs(covs = cv, params = splitParams(), formula = "~ MDC_yr + MDC_dev + fuelA - 1")
+    ins$covMinMax_spread <- cmmSplit()
+    predVals(toyRun(ins))
+  }
+  a <- run(covs); b <- run(withExtra)
+  cellsB <- c(1, 2, 3, 4, 6, 7, 8)
+  expect_equal(b[cellsB], a[cellsB], tolerance = 1e-12)      # median 100 with and without the extra row
+})
+
 test_that("the between term is the same for every pixel: only the within term moves with the pixel", {
   covs <- toyCovariates()
   both <- function(yr, dev) {
