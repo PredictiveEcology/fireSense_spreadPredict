@@ -302,6 +302,8 @@ spreadPredictRun <- function(sim) {
       p <- do.call(spreadProbOneELF, c(list(covs[these], params = parsI, covMinMax = sa$covMinMax_spread[[i]],
                             yr = time(sim), maxFireSpread = P(sim)$maxFireSpread,
                             lowerSpreadProb = P(sim)$lowerSpreadProb,
+                            elfPixels = if (any(fireSenseUtils::isClimateSplitCol(names(parsI))))
+                              which(ELFcellLabels(sim$rasterToMatchLargeELF[[1]]) %in% ids[i]),
                             covCentre = ledgerCovCentre(sa, i), climateRef = ledgerClimateRef(sa, i),
                             powerLawPc50 = ledgerPowerLawPc50(sa, i)), lks[[i]]))
       rows <- these[match(p$pixelID, covs$pixelID[these])]
@@ -443,6 +445,16 @@ rasterVersion <- function(name, r) {
   cur$version
 }
 
+#' The ELF of each cell
+#'
+#' @param r one layer of `sim$rasterToMatchLargeELF`: categorical (the labels are the second column of its levels) or the id.
+#' @return character, the ELF label of each cell, in cell order.
+ELFcellLabels <- function(r) {
+  v <- terra::values(r, mat = FALSE)
+  lv <- terra::levels(r)[[1]]
+  if (is.data.frame(lv) && NCOL(lv) >= 2) as.character(lv[[2]][match(v, lv[[1]])]) else as.character(v)
+}
+
 #' Each ELF's weight at each pixel
 #'
 #' An ELF's raw weight is 1 on its own pixels and falls linearly to 0 at `width` metres from them (distance
@@ -465,9 +477,7 @@ ELFblendWeights <- function(elfRas, template, pixelID, ids, width) {
     stop("fireSense_spreadPredict: sim$rasterToMatchLargeELF is not on the grid of sim$flammableRTM",
          call. = FALSE)
   r <- elfRas[[1]]
-  v <- terra::values(r, mat = FALSE)
-  lv <- terra::levels(r)[[1]]
-  lab <- if (is.data.frame(lv) && NCOL(lv) >= 2) as.character(lv[[2]][match(v, lv[[1]])]) else as.character(v)
+  lab <- ELFcellLabels(r)
   w <- vapply(ids, function(id) {
     core <- r; terra::values(core) <- ifelse(lab %in% id, 1, NA)
     if (all(is.na(terra::values(core, mat = FALSE)))) return(numeric(length(pixelID)))
@@ -489,6 +499,9 @@ ELFblendWeights <- function(elfRas, template, pixelID, ids, width) {
 #' @param params one-row `data.frame`: the ELF's parameter set for this replicate (`paramSetForRep()`).
 #' @param covMinMax the ELF's `covMinMax_spread` (`ledgerCovMinMax()`): the ranges the fit rescaled its
 #'   covariates with. Every fitted covariate must be a column of it, or it is left unscaled.
+#' @param elfPixels integer; the `pixelID`s of the ELF's own burnable pixels, the pixels the year's median of a split
+#'   climate covariate (`<var>_yr`, `<var>_dev`; `fireSenseUtils::splitSpreadClimate()`) is taken over, as in the fit.
+#'   `NULL` (one fitted ELF) is every row of `covs`. Not used by a fit without split terms.
 #' @param yr,maxFireSpread,lowerSpreadProb as for `fireSenseUtils::spreadProbFromIntegerCovs()` and
 #'   `fireSenseUtils::logisticAll()`.
 #' @param covCentre the ELF's `covCentre_spread` (`ledgerCovCentre()`): the covariate means the fit subtracted
@@ -525,7 +538,7 @@ ELFblendWeights <- function(elfRas, template, pixelID, ids, width) {
 #'   also `linearPredictor`, the `x` that `spreadProb` is the link of (the fuels' only with climate in the ceiling), and
 #'   the attribute `linkPars`, the link's parameters (`fireSenseUtils::linearLinkPars()`): a vector, or with climate in
 #'   the ceiling a matrix with one row per pixel.
-spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSpreadProb,
+spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSpreadProb, elfPixels = NULL,
                              covCentre = NULL, climateRef = NULL, powerLawPc50 = NULL, powerLawGamma = NULL,
                              powerLawShape = fireSenseUtils::spreadPowerLawShape,
                              link = if (!is.null(powerLawGamma)) "powerLaw",
@@ -571,6 +584,13 @@ spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSp
   ## the intercept, if the fit has one, is a coefficient with no covariate: it multiplies a column of 1s
   hasIntercept <- fireSenseUtils::spreadInterceptTxt %in% names(params)
   fitted <- setdiff(names(params), c(unlist(fireSenseUtils::logisticParamNames), fireSenseUtils::spreadInterceptTxt))
+  ## a fit made with fireSense_dataPrepFit's spreadClimateSplit has the climate as `<var>_yr` and `<var>_dev`: the
+  ## year's median of the variable over this ELF's burnable pixels, and the departure from it, made as the fit made them
+  splitVars <- unique(fireSenseUtils::climateSplitBase(fitted[fireSenseUtils::isClimateSplitCol(fitted)]))
+  if (length(splitVars) && all(splitVars %in% names(covs))) {
+    ref <- covs[if (is.null(elfPixels)) TRUE else covs$pixelID %in% elfPixels, splitVars, with = FALSE]
+    fireSenseUtils::splitSpreadClimate(covs, splitVars, ref)
+  }
   ## an interaction (`CMD:fuel`) is made from its two covariates by spreadProbFromIntegerCovs(), as in the fit
   needed <- fireSenseUtils::spreadSourceCols(fitted)
   noCov <- setdiff(needed, names(covs))
