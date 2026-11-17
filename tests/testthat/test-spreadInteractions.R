@@ -1,5 +1,5 @@
 ## Fuel x climate interactions: a fitted coefficient named "MDC:fuelA" multiplies the product of the two
-## covariates on the 0-1 scale, formed after rescaling and the mutually exclusive step and before centring, by the
+## centred covariates (0 where youngAge cleared the fuel), formed by the
 ## function the fit uses (fireSenseUtils::spreadProbFromIntegerCovs()). Toy covariates as in setup-toySpread.R:
 ## MDC / 200, youngAge, fuelA / 8 (fuelA / 8 uses the toy range 0..8, as in test-spreadProb-values.R).
 
@@ -23,15 +23,15 @@ test_that("the interaction's coefficient multiplies the product of the rescaled 
   expect_gt(max(abs(predVals(toyRun(insX())) - ref), na.rm = TRUE), 0.01)
 })
 
-test_that("with an intercept and centres, the interaction is centred with its own mean", {
-  centre <- list(MDC = 0.4, youngAge = 0.2, fuelA = 0.3, `MDC:fuelA` = 0.15)
+test_that("with an intercept and centres, the interaction is the product of the centred covariates", {
+  centre <- list(MDC = 0.4, youngAge = 0.2, fuelA = 0.3)
   ins <- insX(intercept = 0.4)
   ins$studyAreaWithSpreadParams[[fireSenseUtils::spreadFitCovCentreTxt]] <- list(centre)
   ins$fireSense_spreadFormula <- "~ 1 + MDC + youngAge + fuelA + MDC:fuelA"
   cv <- toyCovariates()
   o <- order(cv$pixelID)
   mdc <- cv$MDC[o] / 200; ya <- cv$youngAge[o]; fuel <- cv$fuelA[o] / 8
-  x <- 0.4 + 1.5 * (mdc - 0.4) - 0.5 * (ya - 0.2) + (fuel - 0.3) - 2 * (mdc * fuel - 0.15)
+  x <- 0.4 + 1.5 * (mdc - 0.4) - 0.5 * (ya - 0.2) + (fuel - 0.3) - 2 * (mdc - 0.4) * (fuel - 0.3)
   expect_equal(predVals(toyRun(ins))[c(1, 2, 3, 4, 6, 7, 8)], handLogistic3(x), tolerance = 1e-7)
 })
 
@@ -53,7 +53,7 @@ test_that("the prediction is the fit's spreadProb for the same covariates, with 
   ins$fireSense_SpreadCovariates <- covs
   rng <- fireSenseUtils::fuelLinearRange
   ins$covMinMax_spread <- data.table::data.table(MDC = c(0, 200), youngAge = c(0, 1), fuelA = rng)
-  centre <- list(MDC = 0.4, youngAge = 0.2, fuelA = 0.3, `MDC:fuelA` = 0.15)
+  centre <- list(MDC = 0.4, youngAge = 0.2, fuelA = 0.3)
   ins$studyAreaWithSpreadParams[[fireSenseUtils::spreadFitCovCentreTxt]] <- list(centre)
   v <- predVals(toyRun(ins))
 
@@ -70,7 +70,8 @@ test_that("the prediction is the fit's spreadProb for the same covariates, with 
   covPars <- unlist(p[cols])
   fit <- fireSenseUtils::spreadProbFromCovs(as.matrix(used[, cols, with = FALSE]), unlist(p[1:3]), covPars, 0.13)
   expect_equal(unname(v[used$pixelID]), as.numeric(fit), tolerance = 1e-9)
-  ## the fuel the young pixels (cells 2 and 8) had is cleared, and so is its interaction: they differ from a prediction without the clearing
+  ## the fuel of the young pixels (cells 2 and 8) is cleared: centred it is -0.3, but its interaction is 0
   expect_equal(used$fuelA[used$pixelID == 8], -0.3)
-  expect_equal(used[["MDC:fuelA"]][used$pixelID == 8], -0.15)
+  expect_equal(used[["MDC:fuelA"]][used$pixelID == 8], 0)
+  expect_equal(used[["MDC:fuelA"]][used$pixelID == 3], (used$MDC[used$pixelID == 3]) * (0.4 - 0.3))
 })

@@ -473,8 +473,8 @@ ELFblendWeights <- function(elfRas, template, pixelID, ids, width) {
 #'   from the rescaled covariates; `NULL` (a fit without an intercept, or an older ledger row) centres nothing.
 #'   A parameter set with `fireSenseUtils::spreadInterceptTxt` has an intercept, added as a column of 1s after
 #'   the covariates are rescaled and centred, as in the fit. A coefficient named `a:b` is an interaction: `covs` must
-#'   have `a` and `b`, and `fireSenseUtils::spreadProbFromIntegerCovs()` multiplies them (after rescaling, the
-#'   mutually exclusive step, and before centring), exactly as in the fit.
+#'   have `a` and `b`, and `fireSenseUtils::spreadProbFromIntegerCovs()` multiplies them after each is
+#'   rescaled and centred (0 where `youngAge` cleared the fuel), exactly as in the fit.
 #' @param climateRef the ELF's `climateRef_spread` (`ledgerClimateRef()`): with a fit made with climate outside the
 #'   `maxAsymptote` ceiling (`fireSense_spreadFit`'s `spreadLink = "climateOutside"`), the reference value of each
 #'   climate covariate; `fireSenseUtils::spreadProbFromCovs()` then applies that link, exactly as the fit did.
