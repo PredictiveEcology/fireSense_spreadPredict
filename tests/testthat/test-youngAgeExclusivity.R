@@ -47,6 +47,11 @@ test_that("a fuel class the vegetation lacks predicts as a fuel class with no bi
     }
     expect_equal(suppressMessages(run(covs)), run(withFuel))
   }
+  ## a fuel class the fit never saw is a renamed class, not an absent species: the stop stays
+  other <- covs
+  other$fuelB <- fireSenseUtils::logMinB(rep(0, NROW(other)))
+  ins <- toyInputs(covs = other, params = toyParams(), formula = formula)
+  expect_error(toyRun(ins), "fuelA")
   ## a missing climate covariate is still an error
   ins <- toyInputs(covs = covs, params = toyParams(CMDsp = 1.5), formula = "~ MDC + CMDsp - 1")
   expect_error(toyRun(ins))
