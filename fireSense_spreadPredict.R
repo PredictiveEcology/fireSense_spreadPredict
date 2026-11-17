@@ -472,7 +472,9 @@ ELFblendWeights <- function(elfRas, template, pixelID, ids, width) {
 #' @param covCentre the ELF's `covCentre_spread` (`ledgerCovCentre()`): the covariate means the fit subtracted
 #'   from the rescaled covariates; `NULL` (a fit without an intercept, or an older ledger row) centres nothing.
 #'   A parameter set with `fireSenseUtils::spreadInterceptTxt` has an intercept, added as a column of 1s after
-#'   the covariates are rescaled and centred, as in the fit.
+#'   the covariates are rescaled and centred, as in the fit. A coefficient named `a:b` is an interaction: `covs` must
+#'   have `a` and `b`, and `fireSenseUtils::spreadProbFromIntegerCovs()` multiplies them after each is
+#'   rescaled and centred (0 where `youngAge` cleared the fuel), exactly as in the fit.
 #' @param climateRef the ELF's `climateRef_spread` (`ledgerClimateRef()`): with a fit made with climate outside the
 #'   `maxAsymptote` ceiling (`fireSense_spreadFit`'s `spreadLink = "climateOutside"`), the reference value of each
 #'   climate covariate; `fireSenseUtils::spreadProbFromCovs()` then applies that link, exactly as the fit did.
@@ -522,7 +524,9 @@ spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSp
   ## the intercept, if the fit has one, is a coefficient with no covariate: it multiplies a column of 1s
   hasIntercept <- fireSenseUtils::spreadInterceptTxt %in% names(params)
   fitted <- setdiff(names(params), c(unlist(fireSenseUtils::logisticParamNames), fireSenseUtils::spreadInterceptTxt))
-  noCov <- setdiff(fitted, names(covs))
+  ## an interaction (`CMD:fuel`) is made from its two covariates by spreadProbFromIntegerCovs(), as in the fit
+  needed <- fireSenseUtils::spreadSourceCols(fitted)
+  noCov <- setdiff(needed, names(covs))
   if (length(noCov)) {
     stop(
       moduleName, "> the fitted coefficients ", paste(noCov, collapse = ", "),
@@ -534,10 +538,10 @@ spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSp
 
   ## the covariates this ELF was fitted with, not the spread formula's terms: they can differ (a hindcast
   ## rebuilds the formula from another year's land cover), and `covs` can hold more than this ELF's
-  covs <- covs[, c("pixelID", fitted), with = FALSE]
+  covs <- covs[, c("pixelID", needed), with = FALSE]
   ## spreadProbFromIntegerCovs() rescales only the columns of covMinMax: a fitted covariate it lacks would
   ## silently stay on its raw scale (x1000)
-  noRange <- setdiff(fitted, names(covMinMax))
+  noRange <- setdiff(needed, names(covMinMax))
   if (length(noRange))
     stop(moduleName, "> covMinMax_spread has no range for the fitted covariate(s) ",
          paste(noRange, collapse = ", "), "; it has ", paste(names(covMinMax), collapse = ", "),
@@ -547,7 +551,7 @@ spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSp
   shortAnnDTx1000 <- toX1000(list(covs))[[1]] |> setDT()
   colsToUse <- setdiff(names(covs), "pixelID")
   ## what the coefficients multiply: the intercept first, as in the fit (fireSenseUtils::spreadDesignCols())
-  designCols <- c(if (hasIntercept) fireSenseUtils::spreadInterceptTxt, colsToUse)
+  designCols <- c(if (hasIntercept) fireSenseUtils::spreadInterceptTxt, fitted)
 
   ## youngAge is mutually exclusive with every other non-climate covariate, exactly as in the fit
   ## (fireSense_spreadFit::spreadFitPrep()): wherever youngAge is non-zero, fuel biomass, nfLCC_*
