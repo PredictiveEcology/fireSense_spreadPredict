@@ -17,7 +17,7 @@ defineModule(sim, list(
   documentation = list("README.txt", "fireSense_spreadPredict.Rmd"),
   reqdPkgs = list("data.table", "magrittr", "Matrix", "methods", "terra", "SpaDES.core (>=3.0.4)", "stats",
                   "ggplot2", "viridis",
-                  "PredictiveEcology/fireSenseUtils@development (>= 0.2.3.9165)"), # 9165: lowerAsymptote minimum (#230); 9162: smooth links, checkLinkParams() (#229); 9138: powerLawShape
+                  "PredictiveEcology/fireSenseUtils@development (>= 0.2.3.9177)"), # 9165: lowerAsymptote minimum (#230); 9162: smooth links, checkLinkParams() (#229); 9138: powerLawShape
   parameters = bindrows(
     defineParameter(name = "lowerSpreadProb", class = "numeric", default = fireSenseUtils::spreadProbFloor,
                     desc = paste("Lower asymptote of the 2- and 3-parameter logistic. Default",
