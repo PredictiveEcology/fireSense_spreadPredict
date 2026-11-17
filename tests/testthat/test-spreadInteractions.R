@@ -35,12 +35,19 @@ test_that("with an intercept and centres, the interaction is the product of the 
   expect_equal(predVals(toyRun(ins))[c(1, 2, 3, 4, 6, 7, 8)], handLogistic3(x), tolerance = 1e-7)
 })
 
-test_that("a fitted interaction whose covariate is missing stops, naming it", {
+test_that("a fitted interaction whose fuel covariate is absent is formed from no biomass; another missing covariate stops, naming it", {
   covs <- toyCovariates()
+  withFuel <- data.table::copy(covs)
+  data.table::set(withFuel, j = "fuelA", value = fireSenseUtils::logMinB(rep(0, NROW(covs))))
   data.table::set(covs, j = "fuelA", value = NULL)
   ins <- insX()
   ins$fireSense_SpreadCovariates <- covs
-  expect_error(toyRun(ins), "fuelA")
+  ref <- insX()
+  ref$fireSense_SpreadCovariates <- withFuel
+  expect_equal(suppressMessages(predVals(toyRun(ins))), predVals(toyRun(ref)))
+  data.table::set(covs, j = "youngAge", value = NULL)
+  ins$fireSense_SpreadCovariates <- covs
+  expect_error(toyRun(ins), "youngAge")
 })
 
 test_that("the prediction is the fit's spreadProb for the same covariates, with fuel cleared where youngAge is 1", {

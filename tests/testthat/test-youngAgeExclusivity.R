@@ -32,3 +32,22 @@ test_that("a young pixel's covariates entering the link are youngAge = 1 and all
   ## x = 0.75 + 0 + 0.5 + 0 = 1.25
   expect_equal(v[3], handLogistic3(1.25), tolerance = 1e-7)
 })
+
+test_that("a fuel class the vegetation lacks predicts as a fuel class with no biomass, not a 'no covariate' stop", {
+  withFuel <- toyCovariates()
+  withFuel$fuelA <- fireSenseUtils::logMinB(rep(0, NROW(withFuel)))    # no biomass, as the covariates would have it
+  covs <- withFuel
+  covs$fuelA <- NULL                                                   # the species is not in the vegetation
+  formula <- "~ MDC + youngAge + fuelA - 1"
+  for (range in list(c(0, 1e4), c(0, 10))) {                          # linear-fuel fit, and a log-scale fit
+    run <- function(cv) {
+      ins <- toyInputs(covs = cv, params = toyParams(), formula = formula)
+      ins$covMinMax_spread$fuelA <- range
+      predVals(toyRun(ins))
+    }
+    expect_equal(suppressMessages(run(covs)), run(withFuel))
+  }
+  ## a missing climate covariate is still an error
+  ins <- toyInputs(covs = covs, params = toyParams(CMDsp = 1.5), formula = "~ MDC + CMDsp - 1")
+  expect_error(toyRun(ins))
+})

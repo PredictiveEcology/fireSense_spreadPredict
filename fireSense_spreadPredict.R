@@ -507,6 +507,15 @@ spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSp
     params[randomEffects] <- NULL
   }
 
+  ## the intercept, if the fit has one, is a coefficient with no covariate: it multiplies a column of 1s
+  hasIntercept <- fireSenseUtils::spreadInterceptTxt %in% names(params)
+  fitted <- setdiff(names(params), c(unlist(fireSenseUtils::logisticParamNames), fireSenseUtils::spreadInterceptTxt))
+  ## an interaction (`CMD:fuel`) is made from its two covariates by spreadProbFromIntegerCovs(), as in the fit
+  needed <- fireSenseUtils::spreadSourceCols(fitted)
+  ## a fuel class the vegetation lacks has no biomass: logMinB(0), as fireSenseUtils::fuelCovsToCoarse() fills
+  ## it. Set here, with the other fuel columns, so a linear-fuel fit's log is undone for it too.
+  covs <- fireSenseUtils::addAbsentSpeciesCols(covs, needed, value = fireSenseUtils::logMinB(0))
+
   ## Fuel biomass arrives logged (fireSenseUtils::logMinB()). A fit made on LINEAR fuel biomass has
   ## fireSenseUtils::fuelLinearRange, c(0, 1e4), as that covariate's covMinMax_spread, and its
   ## coefficients only mean anything for biomass / 1e4: undo the log with the function the fit used.
@@ -521,11 +530,6 @@ spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSp
 
   ## every fitted coefficient needs a covariate: without one the logistic gets no covariates and
   ## fails later in rowMeans(), with no hint of the cause
-  ## the intercept, if the fit has one, is a coefficient with no covariate: it multiplies a column of 1s
-  hasIntercept <- fireSenseUtils::spreadInterceptTxt %in% names(params)
-  fitted <- setdiff(names(params), c(unlist(fireSenseUtils::logisticParamNames), fireSenseUtils::spreadInterceptTxt))
-  ## an interaction (`CMD:fuel`) is made from its two covariates by spreadProbFromIntegerCovs(), as in the fit
-  needed <- fireSenseUtils::spreadSourceCols(fitted)
   noCov <- setdiff(needed, names(covs))
   if (length(noCov)) {
     stop(
