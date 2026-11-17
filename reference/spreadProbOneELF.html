@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">fireSense_spreadPredict</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.0.9011</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.0.9012</span>
       </span>
     </div>
 
@@ -102,7 +102,9 @@ covariates with. Every fitted covariate must be a column of it, or it is left un
 <dd><p>the ELF's <code>covCentre_spread</code> (<code><a href="ledgerCovCentre.html">ledgerCovCentre()</a></code>): the covariate means the fit subtracted
 from the rescaled covariates; <code>NULL</code> (a fit without an intercept, or an older ledger row) centres nothing.
 A parameter set with <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/fireSenseUtils-constants.html" class="external-link">fireSenseUtils::spreadInterceptTxt</a></code> has an intercept, added as a column of 1s after
-the covariates are rescaled and centred, as in the fit.</p></dd>
+the covariates are rescaled and centred, as in the fit. A coefficient named <code>a:b</code> is an interaction: <code>covs</code> must
+have <code>a</code> and <code>b</code>, and <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/spreadProbFromIntegerCovs.html" class="external-link">fireSenseUtils::spreadProbFromIntegerCovs()</a></code> multiplies them after each is
+rescaled and centred (0 where <code>youngAge</code> cleared the fuel), exactly as in the fit.</p></dd>
 
 
 <dt id="arg-climateref">climateRef<a class="anchor" aria-label="anchor" href="#arg-climateref"></a></dt>
