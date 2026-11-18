@@ -44,7 +44,9 @@ toyInputs <- function(covs = toyCovariates(), params = toyParams(),
        studyAreaWithSpreadParams = sa)
 }
 
+## `.plots = NA` unless given: the default "screen" would plot the spread probability in every toy run
 toySim <- function(objects = toyInputs(), params = list(), times = list(start = 1, end = 1)) {
+  if (!".plots" %in% names(params)) params$.plots <- NA
   SpaDES.core::simInit(
     times = c(times, timeunit = "year"),
     modules = moduleName,

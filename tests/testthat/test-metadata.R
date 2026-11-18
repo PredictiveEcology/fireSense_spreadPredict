@@ -50,10 +50,10 @@ paramTable <- function(md) {
 test_that("parameters have the expected names, classes and defaults", {
   md <- SpaDES.core::moduleMetadata(module = moduleName, path = modulePath)
   expected <- data.frame(
-    class   = c("integer", "numeric", "numeric", "numeric", "character", "logical", "numeric", "numeric", "character", "numeric", "numeric", "logical", "character", "integer"),
+    class   = c("character", "integer", "numeric", "numeric", "numeric", "character", "logical", "numeric", "numeric", "character", "numeric", "numeric", "logical", "character", "integer"),
     ## .runInitialTime defaults to start(sim), which is 0 when only metadata is parsed
-    default = c("1L", "0", "1", "NA", "NA", "FALSE", "20000", "50", "c(\"natural\", \"unknown\")", "0.13", "0.276", "FALSE", "NA", "1L"),
-    row.names = c(".rep", ".runInitialTime", ".runInterval", ".saveInitialTime", ".studyAreaName", ".useCache",
+    default = c("\"screen\"", "1L", "0", "1", "NA", "NA", "FALSE", "20000", "50", "c(\"natural\", \"unknown\")", "0.13", "0.276", "FALSE", "NA", "1L"),
+    row.names = c(".plots", ".rep", ".runInitialTime", ".runInterval", ".saveInitialTime", ".studyAreaName", ".useCache",
                   "ELFblendWidth", "escapeSizeHa", "fireCauses", "lowerSpreadProb", "maxFireSpread", "paramSetByReplicate", "paramSets", "repsPerSet")
   )
   expect_identical(paramTable(md), expected)
