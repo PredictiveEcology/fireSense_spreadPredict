@@ -42,7 +42,7 @@ defineModule(sim, list(
     defineParameter("paramSets", "character", default = NA, min = NA, max = NA,
                     desc = paste("Path to an `.rds` or `.csv` of spread parameter vectors, one per row, for the simulated ELF",
                                  "(`sim$.ELFind`; the only row with one ELF): e.g. a DEoptim population, or the `params` of",
-                                 "ledger rows of another `fitFileSuffix` (a table with a `params` list column, its rows",
+                                 "the rows of another ledger file (a table with a `params` list column, its rows",
                                  "for this ELF). They replace the simulated ELF's rows of the ledger; neighbour ELFs keep",
                                  "theirs, so blending is unchanged. The link, lower asymptote, `gamma` and covariate",
                                  "centres still come from the ledger row. A set must have every coefficient the ledger",
