@@ -1,7 +1,7 @@
 ---
 title: "fireSense_spreadPredict Manual"
-subtitle: "v.1.2.0.9013"
-date: "Last updated: 2026-11-17"
+subtitle: "v.1.2.0.9014"
+date: "Last updated: 2026-11-18"
 output:
   bookdown::html_document2:
     toc: true
@@ -161,7 +161,7 @@ Summary of user-visible parameters (Table \@ref(tab:moduleParams-fireSense-sprea
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Path to an `.rds` or `.csv` of spread parameter vectors, one per row, for the simulated ELF (`sim$.ELFind`; the only row with one ELF): e.g. a DEoptim population, or the `params` of ledger rows of another `fitFileSuffix` (a table with a `params` list column, its rows for this ELF). They replace the simulated ELF's rows of the ledger; neighbour ELFs keep theirs, so blending is unchanged. The link, lower asymptote, `gamma` and covariate centres still come from the ledger row. A set must have every coefficient the ledger row has, else the module stops. `NA` uses the ledger rows. Replicate r uses set `ceiling(r / repsPerSet)` (cycling through the sets), and calls `set.seed(k)` with k the replicate's number within its set, so every set gets the same random numbers in `fireSense_burn` (common random numbers). </td>
+   <td style="text-align:left;"> Path to an `.rds` or `.csv` of spread parameter vectors, one per row, for the simulated ELF (`sim$.ELFind`; the only row with one ELF): e.g. a DEoptim population, or the `params` of the rows of another ledger file (a table with a `params` list column, its rows for this ELF). They replace the simulated ELF's rows of the ledger; neighbour ELFs keep theirs, so blending is unchanged. The link, lower asymptote, `gamma` and covariate centres still come from the ledger row. A set must have every coefficient the ledger row has, else the module stops. `NA` uses the ledger rows. Replicate r uses set `ceiling(r / repsPerSet)` (cycling through the sets), and calls `set.seed(k)` with k the replicate's number within its set, so every set gets the same random numbers in `fireSense_burn` (common random numbers). </td>
    <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
