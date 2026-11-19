@@ -173,7 +173,8 @@ doEvent.fireSense_spreadPredict <- function(sim, eventTime, eventType, debug = F
       ## the year's spread probability
       if (anyPlotting(P(sim)$.plots))
         Plots(sim$fireSense_SpreadPredicted, types = P(sim)$.plots,
-              filename = paste0("SpreadProbability_yr", time(sim)))
+              filename = paste0("SpreadProbability_yr", time(sim)),
+              deviceArgs = list(width = 10, height = 8, units = "in", res = 144))  # png() alone is 480 x 480 px
 
       if (!is.na(P(sim)$.runInterval)) {
         sim <- scheduleEvent(sim, time(sim) + P(sim)$.runInterval, moduleName, "run",

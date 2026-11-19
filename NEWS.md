@@ -1,5 +1,7 @@
 # fireSense_spreadPredict (development version)
 
+- The yearly spread probability map (`.plots = "png"`) is bigger. Its png is now 10 x 8 inches at 144 dpi (1440 x 1152 pixels), as fireSense_burn's; it was R's `png()` default of 480 x 480, which looked small in `SpaDES.shiny::shine()`.
+
 - A ledger row from a `fireSense_spreadFit` with `spreadClimate = "ceiling"` (a power-law `spreadLink` with `climateRef_spread` and `powerLawPc50_spread`) is predicted with climate moving the ceiling `pc` toward p50 (`fireSenseUtils::spreadLinkInputs()`): new `ledgerPowerLawPc50()`; `spreadProbOneELF()` takes `powerLawPc50`, returns the fuels' linear predictor as `linearPredictor` and the link's parameters as the attribute `linkPars` (one row per pixel here). `fireSense_SpreadPowerLaw` is then a raster with a `pc` per pixel even for one ELF, and several ELFs blend the per-pixel parameters (the vector `powerLawParsOf()` is gone: `spreadLinkInputs()` makes the parameters). Rows without `climateRef_spread` predict exactly as before. `fireSense_burn` already reads a per-cell raster of the link's parameters. Needs fireSenseUtils >= 0.2.3.9181 (PredictiveEcology/fireSenseUtils#250).
 
 - New parameter `.plots` (default `"screen"`): the spread probability map (`fireSense_SpreadPredicted`) is plotted each `run` (`SpreadProbability_yr<year>`). `NA` or `NULL` for none.
