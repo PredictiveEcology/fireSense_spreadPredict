@@ -1,7 +1,7 @@
 ---
 title: "fireSense_spreadPredict Manual"
 subtitle: "v.1.2.0.9014"
-date: "Last updated: 2026-11-18"
+date: "Last updated: 2026-11-19"
 output:
   bookdown::html_document2:
     toc: true
@@ -205,6 +205,15 @@ Summary of user-visible parameters (Table \@ref(tab:moduleParams-fireSense-sprea
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Interval between predictions, in years. `NA` predicts once. </td>
+   <td style="text-align:left;"> TRUE </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> .plots </td>
+   <td style="text-align:left;"> character </td>
+   <td style="text-align:left;"> screen </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> Passed to `types` in `Plots()`, e.g. "screen" (default), "png": the spread probability map is plotted each `run`. `NA` or `NULL`: no plots. </td>
    <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
