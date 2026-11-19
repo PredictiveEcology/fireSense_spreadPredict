@@ -66,6 +66,9 @@ defineModule(sim, list(
                     desc = "Time of the first prediction."),
     defineParameter(name = ".runInterval", class = "numeric", default = 1,
                     desc = "Interval between predictions, in years. `NA` predicts once."),
+    defineParameter(".plots", "character", "screen", NA, NA,
+                    desc = paste("Passed to `types` in `Plots()`, e.g. \"screen\" (default), \"png\": the spread probability",
+                                 "map is plotted each `run`. `NA` or `NULL`: no plots.")),
     defineParameter(name = ".saveInitialTime", class = "numeric", default = NA,
                     desc = "Time of the `save` event, which does nothing. `NA` means never."),
     defineParameter(".studyAreaName", "character", NA, NA, NA,
@@ -165,6 +168,10 @@ doEvent.fireSense_spreadPredict <- function(sim, eventTime, eventType, debug = F
     },
     run = {
       sim <- spreadPredictRun(sim)
+      ## the year's spread probability
+      if (anyPlotting(P(sim)$.plots))
+        Plots(sim$fireSense_SpreadPredicted, types = P(sim)$.plots,
+              filename = paste0("SpreadProbability_yr", time(sim)))
 
       if (!is.na(P(sim)$.runInterval)) {
         sim <- scheduleEvent(sim, time(sim) + P(sim)$.runInterval, moduleName, "run",

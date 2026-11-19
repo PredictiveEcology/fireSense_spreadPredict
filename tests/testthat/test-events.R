@@ -67,3 +67,12 @@ test_that("the prediction follows the covariates from year to year", {
   expect_equal(predVals(sim)[4], 0.1622730, tolerance = 1e-6)
   expect_equal(predVals(sim)[1], 0.19, tolerance = 1e-7)
 })
+
+test_that("`.plots` saves the spread probability map each run (default \"screen\"), and NA plots nothing", {
+  sim <- toyRun(params = list(.plots = "png"), times = list(start = 1, end = 2))
+  f <- SpaDES.core::outputs(sim)$file
+  expect_setequal(basename(f), c("SpreadProbability_yr1.png", "SpreadProbability_yr2.png"))
+  expect_true(all(file.exists(f)))
+  expect_length(SpaDES.core::outputs(toyRun())$file, 0L)          # toySim() sets NA
+})
+
