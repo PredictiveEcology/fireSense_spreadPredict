@@ -316,11 +316,8 @@ spreadPredictRun <- function(sim) {
       sim[[nm]][covs$pixelID[ok]] <- accSD[ok, nm] / wsum[ok]
     }
     if (any(wsumPL > 0)) {   ## a power-law or Richards fit: the link's parameters blended over those ELFs; NA where there is none
-      sim$fireSense_SpreadPowerLaw <- rast(sim$flammableRTM, nlyrs = length(linkParNames))
-      names(sim$fireSense_SpreadPowerLaw) <- linkParNames
       okPL <- ok & wsumPL > 0
-      for (nm in linkParNames)
-        sim$fireSense_SpreadPowerLaw[[nm]][covs$pixelID[okPL]] <- accPL[okPL, nm] / wsumPL[okPL]
+      sim$fireSense_SpreadPowerLaw <- linkParsRas(sim$flammableRTM, covs$pixelID[okPL], accPL[okPL, , drop = FALSE] / wsumPL[okPL])
       sim$fireSense_SpreadLinear <- linearPredictorRas(sim$flammableRTM,
                                                        data.table(pixelID = covs$pixelID[okPL],
                                                                   linearPredictor = accX[okPL] / wsumPL[okPL]))
@@ -709,11 +706,15 @@ ledgerClimateRef <- function(sa, i) {
 #'
 #' @param sa `sim$studyAreaWithSpreadParams`, one row per ELF.
 #' @param i integer; the row.
-#' @return `p50`, or `NULL` for a row without the column or with `NA`.
+#' @return `p50`, or `NULL` for a row without the column or with `NA`. A row with `climateRef_spread` and a power-law
+#'   link but no finite `p50` stops, naming the row.
 ledgerPowerLawPc50 <- function(sa, i) {
   col <- fireSenseUtils::spreadFitPowerLawPc50Txt
-  if (!col %in% names(sa)) return(NULL)
-  p50 <- sa[[col]][[i]]
+  p50 <- if (col %in% names(sa)) sa[[col]][[i]]
+  if (!is.null(ledgerClimateRef(sa, i)) && any(ledgerSpreadLink(sa, i) %in% fireSenseUtils::spreadPowerLawLinks) &&
+      !(is.numeric(p50) && length(p50) == 1L && is.finite(p50)))
+    stop("fireSense_spreadPredict: ledger row ", i, " has climate in the ceiling ('", fireSenseUtils::spreadFitClimateRefTxt,
+         "' and spreadLink '", ledgerSpreadLink(sa, i), "') but no finite '", col, "' (", format(p50), ")", call. = FALSE)
   if (is.null(p50) || is.na(p50)) NULL else p50
 }
 
