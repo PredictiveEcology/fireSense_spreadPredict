@@ -66,6 +66,7 @@
 <span>  <span class="va">lowerSpreadProb</span>,</span>
 <span>  covCentre <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  climateRef <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  powerLawPc50 <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  powerLawGamma <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  powerLawShape <span class="op">=</span> <span class="fu">fireSenseUtils</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/fireSenseUtils/man/fireSenseUtils-constants.html" class="external-link">spreadPowerLawShape</a></span>,</span>
 <span>  link <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">powerLawGamma</span><span class="op">)</span><span class="op">)</span> <span class="st">"powerLaw"</span>,</span>
@@ -109,9 +110,15 @@ rescaled and centred (0 where <code>youngAge</code> cleared the fuel), exactly a
 
 <dt id="arg-climateref">climateRef<a class="anchor" aria-label="anchor" href="#arg-climateref"></a></dt>
 <dd><p>the ELF's <code>climateRef_spread</code> (<code><a href="ledgerClimateRef.html">ledgerClimateRef()</a></code>): with a fit made with climate outside the
-<code>maxAsymptote</code> ceiling (<code>fireSense_spreadFit</code>'s <code>spreadLink = "climateOutside"</code>), the reference value of each
-climate covariate; <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/spreadProbFromCovs.html" class="external-link">fireSenseUtils::spreadProbFromCovs()</a></code> then applies that link, exactly as the fit did.
+<code>maxAsymptote</code> ceiling (<code>fireSense_spreadFit</code>'s <code>spreadLink = "climateOutside"</code>) or moving it (<code>spreadClimate = "ceiling"</code>), the reference value of each climate covariate; <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/spreadProbFromCovs.html" class="external-link">fireSenseUtils::spreadProbFromCovs()</a></code> and
+<code>spreadLinkInputs()</code> then apply that link, exactly as the fit did.
 <code>NULL</code> (a fit with climate under the ceiling, or an older ledger row) is the link as it always was.</p></dd>
+
+
+<dt id="arg-powerlawpc-">powerLawPc50<a class="anchor" aria-label="anchor" href="#arg-powerlawpc-"></a></dt>
+<dd><p>the ELF's <code>powerLawPc50_spread</code> (<code><a href="ledgerPowerLawPc50.html">ledgerPowerLawPc50()</a></code>): with <code>climateRef</code> and a power-law <code>link</code>
+(a fit with <code>fireSense_spreadFit</code>'s <code>spreadClimate = "ceiling"</code>), the runaway threshold the ceiling moves toward;
+<code><a href="https://rdrr.io/pkg/fireSenseUtils/man/spreadLinkInputs.html" class="external-link">fireSenseUtils::spreadLinkInputs()</a></code> ignores it without <code>climateRef</code>.</p></dd>
 
 
 <dt id="arg-powerlawgamma">powerLawGamma<a class="anchor" aria-label="anchor" href="#arg-powerlawgamma"></a></dt>
@@ -140,7 +147,9 @@ others existed.</p></dd>
     <div id="value">
     <h2>Value</h2>
     <p><code>data.table</code> with <code>pixelID</code> and <code>spreadProb</code>, from the one parameter set in <code>params</code>; with a <code>link</code>
-also <code>linearPredictor</code>, the <code>x</code> that <code>spreadProb</code> is the link of.</p>
+also <code>linearPredictor</code>, the <code>x</code> that <code>spreadProb</code> is the link of (the fuels' only with climate in the ceiling), and
+the attribute <code>linkPars</code>, the link's parameters (<code><a href="https://rdrr.io/pkg/fireSenseUtils/man/linearLinkPars.html" class="external-link">fireSenseUtils::linearLinkPars()</a></code>): a vector, or with climate in
+the ceiling a matrix with one row per pixel.</p>
     </div>
 
   </div>
