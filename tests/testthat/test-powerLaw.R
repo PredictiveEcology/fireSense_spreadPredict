@@ -8,24 +8,7 @@
 ## have maxAsymptote = 0.25, hillSlope1 = 2, and coefficients 1.5, -0.5, 1 (the power law ignores hillSlope1:
 ## the fit fixes it at 1, and it is the linear predictor that p depends on).
 
-linkColPL <- fireSenseUtils::spreadLinkTxt
-gammaColPL <- fireSenseUtils::spreadFitPowerLawGammaTxt
-shapeColPL <- fireSenseUtils::spreadFitPowerLawShapeTxt
-cellsPL <- c(1, 2, 3, 4, 6, 7, 8)
-
-inputsPL <- function(gamma = 1.9, link = "powerLaw") {
-  ins <- toyInputs()
-  if (!is.null(link)) ins$studyAreaWithSpreadParams[[linkColPL]] <- link
-  if (!is.null(gamma)) ins$studyAreaWithSpreadParams[[gammaColPL]] <- gamma
-  ins
-}
-
-## by hand, in cell order
-pHandPL <- function(gamma = 1.9, pc = 0.25, floor = 0.13, shape = 1) {
-  cv <- toyCovariates(); o <- order(cv$pixelID)
-  x <- 1.5 * cv$MDC[o] / 200 - 0.5 * cv$youngAge[o] + 1 * cv$fuelA[o] / 8
-  pmax(pc - (pc - floor) * exp(-sign(x) * abs(x / gamma)^shape), 0)
-}
+## linkColPL, gammaColPL, shapeColPL, cellsPL, inputsPL() and pHandPL() are in setup-toySpread.R (test-climateCeiling.R uses them).
 
 test_that("a powerLaw row predicts p = pc - (pc - floor) * exp(-x / gamma), with its own gamma", {
   v <- predVals(toyRun(inputsPL()))

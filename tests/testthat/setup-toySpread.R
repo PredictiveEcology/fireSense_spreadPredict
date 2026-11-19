@@ -99,3 +99,24 @@ multiInputs <- function() {
        studyAreaWithSpreadParams = sa, fireSense_spreadFormula = "~ MDC + fuelA - 1",
        covMinMax_spread = cmm("fuelA"))
 }
+
+## A power-law ledger row on the toy inputs (test-powerLaw.R, test-climateCeiling.R); the toy covariates and coefficients
+## are those of test-spreadProb-values.R
+linkColPL <- fireSenseUtils::spreadLinkTxt
+gammaColPL <- fireSenseUtils::spreadFitPowerLawGammaTxt
+shapeColPL <- fireSenseUtils::spreadFitPowerLawShapeTxt
+cellsPL <- c(1, 2, 3, 4, 6, 7, 8)
+
+inputsPL <- function(gamma = 1.9, link = "powerLaw") {
+  ins <- toyInputs()
+  if (!is.null(link)) ins$studyAreaWithSpreadParams[[linkColPL]] <- link
+  if (!is.null(gamma)) ins$studyAreaWithSpreadParams[[gammaColPL]] <- gamma
+  ins
+}
+
+## by hand, in cell order
+pHandPL <- function(gamma = 1.9, pc = 0.25, floor = 0.13, shape = 1) {
+  cv <- toyCovariates(); o <- order(cv$pixelID)
+  x <- 1.5 * cv$MDC[o] / 200 - 0.5 * cv$youngAge[o] + 1 * cv$fuelA[o] / 8
+  pmax(pc - (pc - floor) * exp(-sign(x) * abs(x / gamma)^shape), 0)
+}
