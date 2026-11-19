@@ -73,6 +73,11 @@ test_that("`.plots` saves the spread probability map each run (default \"screen\
   f <- SpaDES.core::outputs(sim)$file
   expect_setequal(basename(f), c("SpreadProbability_yr1.png", "SpreadProbability_yr2.png"))
   expect_true(all(file.exists(f)))
+  pngSize <- function(f) {                       # width, height in pixels, from the PNG header
+    con <- file(f, "rb"); on.exit(close(con)); h <- readBin(con, "raw", 24L)
+    readBin(h[17:24], "integer", 2L, size = 4L, endian = "big")
+  }
+  expect_equal(pngSize(f[1]), c(1440L, 1152L))   # not png()'s 480 x 480
   expect_length(SpaDES.core::outputs(toyRun())$file, 0L)          # toySim() sets NA
 })
 
