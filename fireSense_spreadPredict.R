@@ -17,7 +17,7 @@ defineModule(sim, list(
   documentation = list("README.txt", "fireSense_spreadPredict.Rmd"),
   reqdPkgs = list("data.table", "magrittr", "Matrix", "methods", "terra", "SpaDES.core (>=3.0.4)", "stats",
                   "ggplot2", "viridis",
-                  "PredictiveEcology/fireSenseUtils@development (>= 0.2.3.9177)"), # 9165: lowerAsymptote minimum (#230); 9162: smooth links, checkLinkParams() (#229); 9138: powerLawShape
+                  "PredictiveEcology/fireSenseUtils@development (>= 0.2.3.9181)"), # 9181: spreadLinkInputs(), powerLawPc50 (fireSenseUtils#250); 9165: lowerAsymptote minimum (#230); 9162: smooth links, checkLinkParams() (#229); 9138: powerLawShape
   parameters = bindrows(
     defineParameter(name = "lowerSpreadProb", class = "numeric", default = fireSenseUtils::spreadProbFloor,
                     desc = paste("Lower asymptote of the 2- and 3-parameter logistic. Default",
@@ -129,7 +129,9 @@ defineModule(sim, list(
                                "`fireSenseUtils::powerLawLink()`; \"powerLawSmooth\" also `lower` (the row's",
                                "`lowerAsymptote`, at least `fireSenseUtils::spreadLowerAsymptoteMin`, 0.001: `fireSenseUtils::checkLinkParams()`); \"richards\": `pc`, `lower`, `nu` (the row's `richardsNu`) and `B`.",
                                "A numeric vector with one fitted ELF; with several, a raster with one layer per name,",
-                               "blended like `fireSense_SpreadSD`.")),
+                               "blended like `fireSense_SpreadSD`. With a fit made with climate in the ceiling",
+                               "(`fireSense_spreadFit`'s `spreadClimate = \"ceiling\"`: a ledger row with `climateRef_spread` and a",
+                               "power-law link), `pc` differs by pixel and year, so it is a raster even with one ELF.")),
     createsOutput(objectName = "fireSense_SpreadLinear", objectClass = "SpatRaster",
                   desc = paste("Only for a fit made with a link of `fireSenseUtils::spreadLinearLinks` (else NULL): the linear predictor x of",
                                "each flammable pixel (covariates %*% coefficients), the step before",
@@ -254,10 +256,13 @@ spreadPredictRun <- function(sim) {
     pred <- do.call(spreadProbOneELF, c(list(covs, params = params1, covMinMax = ledgerCovMinMax(sa, 1L, sim$covMinMax_spread),
                              yr = time(sim),
                              maxFireSpread = P(sim)$maxFireSpread, lowerSpreadProb = P(sim)$lowerSpreadProb,
-                             covCentre = ledgerCovCentre(sa, 1L), climateRef = ledgerClimateRef(sa, 1L)), lk1))
+                             covCentre = ledgerCovCentre(sa, 1L), climateRef = ledgerClimateRef(sa, 1L),
+                             powerLawPc50 = ledgerPowerLawPc50(sa, 1L)), lk1))
     for (nm in names(randomEffectOutputs)) sim[[nm]] <- randomEffectSDOf(params1, randomEffectOutputs[[nm]])
     sim$fireSense_SpreadLink <- lk1$link
-    sim$fireSense_SpreadPowerLaw <- do.call(powerLawParsOf, c(list(params1, lowerSpreadProb = P(sim)$lowerSpreadProb), lk1))
+    ## the link's parameters: a vector, or with climate in the ceiling (`spreadClimate = "ceiling"`) one row per pixel
+    linkPars <- attr(pred, "linkPars")
+    sim$fireSense_SpreadPowerLaw <- if (is.matrix(linkPars)) linkParsRas(sim$flammableRTM, pred$pixelID, linkPars) else linkPars
     if (!is.null(lk1$link)) sim$fireSense_SpreadLinear <- linearPredictorRas(sim$flammableRTM, pred)
   } else {
     ids <- as.character(sa[[fireSenseUtils::polygonIDTxt]])
@@ -288,12 +293,16 @@ spreadPredictRun <- function(sim) {
       p <- do.call(spreadProbOneELF, c(list(covs[these], params = parsI, covMinMax = sa$covMinMax_spread[[i]],
                             yr = time(sim), maxFireSpread = P(sim)$maxFireSpread,
                             lowerSpreadProb = P(sim)$lowerSpreadProb,
-                            covCentre = ledgerCovCentre(sa, i), climateRef = ledgerClimateRef(sa, i)), lks[[i]]))
+                            covCentre = ledgerCovCentre(sa, i), climateRef = ledgerClimateRef(sa, i),
+                            powerLawPc50 = ledgerPowerLawPc50(sa, i)), lks[[i]]))
       rows <- these[match(p$pixelID, covs$pixelID[these])]
       acc[rows] <- acc[rows] + w[rows, i] * p$spreadProb
       accSD[rows, ] <- accSD[rows, ] + w[rows, i] * rep(vapply(randomEffectOutputs, function(txt) randomEffectSDOf(parsI, txt), numeric(1)), each = length(rows))
       if (!is.null(lks[[i]]$link)) {
-        accPL[rows, ] <- accPL[rows, ] + w[rows, i] * rep(do.call(powerLawParsOf, c(list(parsI, lowerSpreadProb = P(sim)$lowerSpreadProb), lks[[i]])), each = length(rows))
+        ## one row per pixel with climate in the ceiling, else the ELF's one vector for all its pixels
+        linkParsI <- attr(p, "linkPars")
+        if (!is.matrix(linkParsI)) linkParsI <- matrix(linkParsI, length(rows), length(linkParsI), byrow = TRUE)
+        accPL[rows, ] <- accPL[rows, ] + w[rows, i] * linkParsI
         accX[rows] <- accX[rows] + w[rows, i] * p$linearPredictor
         wsumPL[rows] <- wsumPL[rows] + w[rows, i]
       }
@@ -483,8 +492,9 @@ ELFblendWeights <- function(elfRas, template, pixelID, ids, width) {
 #'   have `a` and `b`, and `fireSenseUtils::spreadProbFromIntegerCovs()` multiplies them after each is
 #'   rescaled and centred (0 where `youngAge` cleared the fuel), exactly as in the fit.
 #' @param climateRef the ELF's `climateRef_spread` (`ledgerClimateRef()`): with a fit made with climate outside the
-#'   `maxAsymptote` ceiling (`fireSense_spreadFit`'s `spreadLink = "climateOutside"`), the reference value of each
-#'   climate covariate; `fireSenseUtils::spreadProbFromCovs()` then applies that link, exactly as the fit did.
+#'   `maxAsymptote` ceiling (`fireSense_spreadFit`'s `spreadLink = "climateOutside"`) or moving it (`spreadClimate =
+#'   "ceiling"`), the reference value of each climate covariate; `fireSenseUtils::spreadProbFromCovs()` and
+#'   `spreadLinkInputs()` then apply that link, exactly as the fit did.
 #'   `NULL` (a fit with climate under the ceiling, or an older ledger row) is the link as it always was.
 #' @param powerLawGamma the ELF's `powerLawGamma_spread` (`ledgerPowerLawGamma()`): with a fit made with
 #'   `fireSense_spreadFit`'s `spreadLink = "powerLaw"`, its `gamma`; `fireSenseUtils::spreadProbFromCovs()` then
@@ -497,10 +507,15 @@ ELFblendWeights <- function(elfRas, template, pixelID, ids, width) {
 #'   others existed.
 #' @param lowerAsymptote,richardsNu the ELF's `lowerAsymptote_spread` and `richardsNu_spread` (`ledgerLowerAsymptote()`,
 #'   `ledgerRichardsNu()`): with `"powerLawSmooth"` and `"richards"`, the lower asymptote, and `nu` of `"richards"`.
+#' @param powerLawPc50 the ELF's `powerLawPc50_spread` (`ledgerPowerLawPc50()`): with `climateRef` and a power-law `link`
+#'   (a fit with `fireSense_spreadFit`'s `spreadClimate = "ceiling"`), the runaway threshold the ceiling moves toward;
+#'   `fireSenseUtils::spreadLinkInputs()` ignores it without `climateRef`.
 #' @return `data.table` with `pixelID` and `spreadProb`, from the one parameter set in `params`; with a `link`
-#'   also `linearPredictor`, the `x` that `spreadProb` is the link of.
+#'   also `linearPredictor`, the `x` that `spreadProb` is the link of (the fuels' only with climate in the ceiling), and
+#'   the attribute `linkPars`, the link's parameters (`fireSenseUtils::linearLinkPars()`): a vector, or with climate in
+#'   the ceiling a matrix with one row per pixel.
 spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSpreadProb,
-                             covCentre = NULL, climateRef = NULL, powerLawGamma = NULL,
+                             covCentre = NULL, climateRef = NULL, powerLawPc50 = NULL, powerLawGamma = NULL,
                              powerLawShape = fireSenseUtils::spreadPowerLawShape,
                              link = if (!is.null(powerLawGamma)) "powerLaw",
                              lowerAsymptote = fireSenseUtils::spreadProbFloor,
@@ -592,15 +607,24 @@ spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSp
   matching <- intersect(names(covPars), colnames(mat))
 
   ## the one function the fit computes its spread probability with, so the prediction cannot differ from it
-  out <- data.table(pixelID = shortAnnDT$pixelID,
-                    spreadProb = spreadProbFromCovs(mat[, matching, drop = FALSE], logisticPars, covPars, lowerSpreadProb,
-                                                    link = link,
-                                                    climateRef = climateRef, powerLawGamma = powerLawGamma,
-                                                    powerLawShape = powerLawShape, lowerAsymptote = lowerAsymptote,
-                                                    richardsNu = richardsNu))
+  mat <- mat[, matching, drop = FALSE]
+  if (is.null(link))
+    return(data.table(pixelID = shortAnnDT$pixelID,
+                      spreadProb = spreadProbFromCovs(mat, logisticPars, covPars, lowerSpreadProb, link = link,
+                                                      climateRef = climateRef, powerLawGamma = powerLawGamma,
+                                                      powerLawShape = powerLawShape, lowerAsymptote = lowerAsymptote,
+                                                      richardsNu = richardsNu)))
+  ## a link of `fireSenseUtils::spreadLinearLinks`: x and the link's parameters, which `spreadProbFromCovs()` turns
+  ## into p the same way. With climate in the ceiling x is the fuels' only and the parameters (`pc`) are one row per pixel.
+  ## "richards" has no gamma, and does not use one
+  if (is.null(powerLawGamma)) powerLawGamma <- fireSenseUtils::spreadPowerLawGamma
+  inputs <- spreadLinkInputs(mat, logisticPars, covPars, lowerSpreadProb, link, climateRef, powerLawPc50,
+                             powerLawGamma = powerLawGamma,
+                             powerLawShape = powerLawShape, lowerAsymptote = lowerAsymptote, richardsNu = richardsNu)
   ## the link's input: the power law clips it at 0, so it cannot be recovered from spreadProb
-  if (!is.null(link))
-    set(out, NULL, "linearPredictor", as.vector(mat[, matching, drop = FALSE] %*% covPars))
+  out <- data.table(pixelID = shortAnnDT$pixelID, spreadProb = linearLinkProb(inputs$x, link, inputs$pars),
+                    linearPredictor = inputs$x)
+  setattr(out, "linkPars", inputs$pars)
   out
 }
 
@@ -625,28 +649,20 @@ randomEffectOutputs <- list(fireSense_SpreadFireSD = fireSenseUtils::fireSpreadS
 surfaceOutputs <- c("fireSense_SpreadPredicted", names(randomEffectOutputs), "fireSense_SpreadLink",
                     "fireSense_SpreadPowerLaw", "fireSense_SpreadLinear")
 
-#' What `fireSense_burn` needs to add the year effect on the linear predictor of a power-law or Richards fit
+#' `fireSense_SpreadPowerLaw` with a parameter per pixel: the link's parameters on the grid of `flammableRTM`
 #'
-#' A fit made with `spreadLink = "powerLaw"`, `"powerLawSmooth"` or `"richards"` adds its year effect (`yearSpreadSD`)
-#' to the linear predictor `x`, not to the logit of `p`. `fireSense_burn` adds the effect to `x` and maps back with the
-#' link (`fireSenseUtils::linearLinkProb()`), with these parameters.
+#' With climate in the ceiling `pc` differs by pixel (`fireSenseUtils::spreadLinkInputs()`), so the parameters are a raster
+#' with one layer per name, as with several ELFs.
 #'
-#' @param params one-row `data.frame`: the parameter set in use (`paramSetForRep()`); `maxAsymptote` is `pc`.
-#' @param powerLawGamma the row's `gamma` (`ledgerPowerLawGamma()`); `NULL` for a link without one.
-#' @param lowerSpreadProb the `floor`.
-#' @param powerLawShape the row's `shape` (`ledgerPowerLawShape()`).
-#' @param link the row's link (`ledgerLinkArgs()`); by default `"powerLaw"` when `powerLawGamma` is given.
-#' @param lowerAsymptote,richardsNu the row's `lowerAsymptote` and `richardsNu`.
-#' @return A named numeric vector (`fireSenseUtils::spreadLinkParNames` of the link; `fireSenseUtils::linearLinkPars()`),
-#'   or `NULL` for another link.
-powerLawParsOf <- function(params, powerLawGamma = NULL, lowerSpreadProb, powerLawShape = fireSenseUtils::spreadPowerLawShape,
-                           link = if (!is.null(powerLawGamma)) "powerLaw", lowerAsymptote = fireSenseUtils::spreadProbFloor,
-                           richardsNu = fireSenseUtils::spreadRichardsNu) {
-  if (is.null(link)) return(NULL)
-  ## "richards" has no gamma, and does not use one
-  if (is.null(powerLawGamma)) powerLawGamma <- fireSenseUtils::spreadPowerLawGamma
-  fireSenseUtils::linearLinkPars(link, params[["maxAsymptote"]][1L], powerLawGamma, lowerSpreadProb, powerLawShape,
-                                 lowerAsymptote, richardsNu)
+#' @param template `sim$flammableRTM`.
+#' @param pixelID cells of `template`, one per row of `pars`.
+#' @param pars matrix, one column per parameter (`fireSenseUtils::spreadLinkParNames` of the link).
+#' @return A `SpatRaster`, `NA` outside `pixelID`.
+linkParsRas <- function(template, pixelID, pars) {
+  r <- rast(template, nlyrs = ncol(pars))
+  names(r) <- colnames(pars)
+  for (nm in colnames(pars)) r[[nm]][pixelID] <- pars[, nm]
+  r
 }
 
 #' The covariate ranges of one ledger row
@@ -683,6 +699,22 @@ ledgerClimateRef <- function(sa, i) {
   if (!col %in% names(sa)) return(NULL)
   ref <- sa[[col]][[i]]
   if (is.list(ref) && length(ref)) ref else NULL
+}
+
+#' The runaway threshold of one ledger row
+#'
+#' A fit made with `fireSense_spreadFit`'s `spreadClimate = "ceiling"` moves `maxAsymptote` toward the landscape's
+#' runaway threshold `p50`, stored in the ledger row (`fireSenseUtils::spreadFitPowerLawPc50Txt`) as for every power-law
+#' fit. Only a row with `climateRef_spread` (`ledgerClimateRef()`) uses it.
+#'
+#' @param sa `sim$studyAreaWithSpreadParams`, one row per ELF.
+#' @param i integer; the row.
+#' @return `p50`, or `NULL` for a row without the column or with `NA`.
+ledgerPowerLawPc50 <- function(sa, i) {
+  col <- fireSenseUtils::spreadFitPowerLawPc50Txt
+  if (!col %in% names(sa)) return(NULL)
+  p50 <- sa[[col]][[i]]
+  if (is.null(p50) || is.na(p50)) NULL else p50
 }
 
 #' The power-law exponent of one ledger row
