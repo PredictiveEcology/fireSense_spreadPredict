@@ -1,7 +1,7 @@
 ---
 title: "fireSense_spreadPredict Manual"
-subtitle: "v.1.2.0.9015"
-date: "Last updated: 2026-11-19"
+subtitle: "v.1.2.0.9016"
+date: "Last updated: 2026-11-20"
 output:
   bookdown::html_document2:
     toc: true
@@ -303,7 +303,7 @@ Description of the module outputs (Table \@ref(tab:moduleOutputs-fireSense-sprea
   <tr>
    <td style="text-align:left;"> fireSense_SpreadPowerLaw </td>
    <td style="text-align:left;"> SpatRaster&amp;#124;numeric </td>
-   <td style="text-align:left;"> Only for a fit made with `spreadLink = "powerLaw"`, `"powerLawSmooth"` or `"richards"` (else NULL): the parameters of its link, named as `fireSenseUtils::spreadLinkParNames` says for `fireSense_SpreadLink`, for `fireSense_burn`, which adds the year effect to the linear predictor, as the fit does. "powerLaw": `pc` (the row's `maxAsymptote`), `gamma`, `floor` (`lowerSpreadProb`) and `shape` of `fireSenseUtils::powerLawLink()`; "powerLawSmooth" also `lower` (the row's `lowerAsymptote`, at least `fireSenseUtils::spreadLowerAsymptoteMin`, 0.001: `fireSenseUtils::checkLinkParams()`); "richards": `pc`, `lower`, `nu` (the row's `richardsNu`) and `B`. A numeric vector with one fitted ELF; with several, a raster with one layer per name, blended like `fireSense_SpreadSD`. With a fit made with climate in the ceiling (`fireSense_spreadFit`'s `spreadClimate = "ceiling"`: a ledger row with `climateRef_spread` and a power-law link), `pc` differs by pixel and year, so it is a raster even with one ELF. </td>
+   <td style="text-align:left;"> Only for a fit made with `spreadLink = "powerLaw"`, `"powerLawSmooth"` or `"richards"` (else NULL): the parameters of its link, named as `fireSenseUtils::spreadLinkParNames` says for `fireSense_SpreadLink`, for `fireSense_burn`, which adds the year effect to the linear predictor, as the fit does. "powerLaw": `pc` (the row's `maxAsymptote`), `gamma`, `floor` (`lowerSpreadProb`) and `shape` of `fireSenseUtils::powerLawLink()`; "powerLawSmooth" also `lower` (the row's `lowerAsymptote`, at least `fireSenseUtils::spreadLowerAsymptoteMin`, 0.001: `fireSenseUtils::checkLinkParams()`); "richards": `pc`, `lower`, `nu` (the row's `richardsNu`) and `B`. A numeric vector with one fitted ELF; with several, a raster with one layer per name, blended like `fireSense_SpreadSD`. With a fit made with climate in the ceiling (`fireSense_spreadFit`'s `spreadClimate = "ceiling"`: a ledger row with `climateRef_spread` and a power-law link), `pc` differs by pixel and year, so it is a raster even with one ELF. So with `spreadClimate = "activation"` (the row's `fireSenseUtils::spreadClimateTxt`), where fuel sets each pixel's `pc`. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> fireSense_SpreadLinear </td>

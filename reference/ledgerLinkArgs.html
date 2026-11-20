@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">fireSense_spreadPredict</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.0.9015</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.0.9016</span>
       </span>
     </div>
 
@@ -57,7 +57,7 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ledgerLinkArgs</span><span class="op">(</span><span class="va">sa</span>, <span class="va">i</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ledgerLinkArgs</span><span class="op">(</span><span class="va">sa</span>, <span class="va">i</span>, floor <span class="op">=</span> <span class="fu">fireSenseUtils</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/fireSenseUtils/man/spreadProbBounds.html" class="external-link">spreadProbFloor</a></span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -71,12 +71,17 @@
 <dt id="arg-i">i<a class="anchor" aria-label="anchor" href="#arg-i"></a></dt>
 <dd><p>integer; the row.</p></dd>
 
+
+<dt id="arg-floor">floor<a class="anchor" aria-label="anchor" href="#arg-floor"></a></dt>
+<dd><p>the run's <code>lowerSpreadProb</code>, which an activation row's lower asymptote must equal.</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
     <p>A list of <code>link</code> (only for a link of <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/fireSenseUtils-constants.html" class="external-link">fireSenseUtils::spreadLinearLinks</a></code>), <code>powerLawGamma</code> (not <code>"richards"</code>),
-<code>powerLawShape</code>, <code>lowerAsymptote</code> and <code>richardsNu</code> (the links that have them); the others are left out, so they
-take <code><a href="spreadProbOneELF.html">spreadProbOneELF()</a></code>'s defaults. A row of any other link, or without one, has <code>powerLawShape</code> only.</p>
+<code>powerLawShape</code>, <code>lowerAsymptote</code> and <code>richardsNu</code> (the links that have them), and <code>spreadClimate</code> when the row
+records it; the others are left out, so they take <code><a href="spreadProbOneELF.html">spreadProbOneELF()</a></code>'s defaults. A row of any other link,
+or without one, has <code>powerLawShape</code> only.</p>
     </div>
 
   </div>

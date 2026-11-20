@@ -19,7 +19,7 @@ value stops, naming the row."><!-- mathjax --><script src="https://cdnjs.cloudfl
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">fireSense_spreadPredict</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.0.9015</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.0.9016</span>
       </span>
     </div>
 
@@ -61,7 +61,7 @@ value stops, naming the row.</p>
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ledgerLinkNumber</span><span class="op">(</span><span class="va">sa</span>, <span class="va">i</span>, <span class="va">col</span>, <span class="va">links</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ledgerLinkNumber</span><span class="op">(</span><span class="va">sa</span>, <span class="va">i</span>, <span class="va">col</span>, <span class="va">links</span>, floor <span class="op">=</span> <span class="fu">fireSenseUtils</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/fireSenseUtils/man/spreadProbBounds.html" class="external-link">spreadProbFloor</a></span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -82,6 +82,10 @@ value stops, naming the row.</p>
 
 <dt id="arg-links">links<a class="anchor" aria-label="anchor" href="#arg-links"></a></dt>
 <dd><p>the links that write <code>col</code>; any other row gives <code>NULL</code>.</p></dd>
+
+
+<dt id="arg-floor">floor<a class="anchor" aria-label="anchor" href="#arg-floor"></a></dt>
+<dd><p>the run's <code>lowerSpreadProb</code>, which an activation row's lower asymptote must equal.</p></dd>
 
 </dl></div>
     <div id="value">
