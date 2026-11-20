@@ -91,3 +91,37 @@ test_that("an activation row and its parameters must agree, and the link must be
   sa[[modeColCA]] <- "wet"
   expect_error(ledgerSpreadClimate(sa, 1L), "unknown")
 })
+
+test_that("a recorded mode is the fit's: an explicit 'predictor' row ignores a climateRef; 'ceiling' needs one", {
+  ## a power-law row with climateRef and p50 is predicted as ceiling when it records nothing, as predictor when it says so
+  pred <- inputsCA(mode = "predictor", a = NULL)
+  noRef <- inputsCA(mode = NULL, a = NULL)
+  noRef$studyAreaWithSpreadParams[[fireSenseUtils::spreadFitClimateRefTxt]] <- NULL
+  expect_identical(predVals(toyRun(pred)), predVals(toyRun(noRef)))
+  expect_false(isTRUE(all.equal(predVals(toyRun(pred)), predVals(toyRun(inputsCA(mode = NULL, a = NULL))))))
+  bad <- inputsCA(mode = "ceiling", a = NULL)
+  bad$studyAreaWithSpreadParams[[fireSenseUtils::spreadFitClimateRefTxt]] <- NULL
+  expect_error(toyRun(bad), "spreadClimate 'ceiling' has no")
+})
+
+test_that("the activation's floor check uses the run's lowerSpreadProb", {
+  sa <- inputsCA()$studyAreaWithSpreadParams
+  sa[[fireSenseUtils::spreadFitLowerAsymptoteTxt]] <- 0.1
+  expect_identical(ledgerLowerAsymptote(sa, 1L, floor = 0.1), 0.1)
+  expect_error(ledgerLowerAsymptote(sa, 1L), "lowerAsymptote = lowerSpreadProb")
+  expect_identical(ledgerLinkArgs(sa, 1L, floor = 0.1)$lowerAsymptote, 0.1)
+})
+
+test_that("ELFs fitted in different spreadClimate modes are not blended", {
+  ins <- multiInputs()
+  sa <- ins$studyAreaWithSpreadParams
+  sa[[linkColPL]] <- c("powerLawSmooth", "powerLawSmooth")
+  sa[[gammaColPL]] <- c(2, 2)
+  sa[[fireSenseUtils::spreadFitLowerAsymptoteTxt]] <- c(0.13, 0.13)
+  sa[[fireSenseUtils::spreadFitPowerLawPc50Txt]] <- c(0.3, 0.3)
+  sa[[fireSenseUtils::spreadFitClimateRefTxt]] <- list(list(MDC = 0.4), list(MDC = 0.4))
+  sa[[modeColCA]] <- c("activation", "ceiling")
+  sa$params[[1]][[actTxtCA]] <- 0.8
+  ins$studyAreaWithSpreadParams <- sa
+  expect_error(toyRun(ins, params = list(ELFblendWidth = 20000)), "different spreadClimate")
+})
