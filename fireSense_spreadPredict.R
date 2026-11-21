@@ -569,7 +569,7 @@ spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSp
   fuelCols <- character()
   for (cn in intersect(names(covMinMax), names(covs))) {
     if (fireSenseUtils::isLinearFuelRange(covMinMax[[cn]])) {
-      covs[[cn]] <- fireSenseUtils::fuelLogToLinear(covs[[cn]])
+      data.table::set(covs, NULL, cn, fireSenseUtils::fuelLogToLinear(covs[[cn]])) # by reference: `[[<-` copies, and splitSpreadClimate() below then cannot add columns
       fuelCols <- c(fuelCols, cn)
     }
   }

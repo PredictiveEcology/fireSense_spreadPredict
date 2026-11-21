@@ -109,3 +109,26 @@ test_that("an interaction of a split term is made from the split term, so the fi
   x <- 1.5 * yr + 0.8 * dev + fuel - 2 * yr * fuel
   expect_equal(predVals(toyRun(ins))[cellsPL], handLogistic3(x), tolerance = 1e-7)
 })
+
+test_that("a fit with an intercept, centres and a _yr:fuel interaction predicts the product of the centred terms, 0 where youngAge cleared the fuel, and no _dev interaction", {
+  covs <- toyCovariates()
+  p <- data.frame(maxAsymptote = 0.25, hillSlope1 = 2, inflectionPoint1 = 1, icpt = 0.4, MDC_yr = 1.5, MDC_dev = 0.8,
+                  youngAge = -0.5, fuelA = 1, `MDC_yr:fuelA` = -2, check.names = FALSE)
+  names(p)[4] <- fireSenseUtils::spreadInterceptTxt
+  ## fuel arrives logged, with the fit's linear range (only then is it cleared where youngAge is 1)
+  biomass <- c(0, 0, 4000, 0, 8000, 8000, 2000)
+  data.table::set(covs, j = "fuelA", value = fireSenseUtils::logMinB(biomass))
+  ins <- toyInputs(covs = covs, params = p, formula = "~ 1 + MDC_yr + MDC_dev + youngAge + fuelA + MDC_yr:fuelA")
+  ins$covMinMax_spread <- data.table::data.table(MDC_yr = c(0, 200), MDC_dev = c(-100, 100), youngAge = c(0, 1),
+                                                 fuelA = fireSenseUtils::fuelLinearRange)
+  centre <- list(MDC_yr = 0.4, MDC_dev = 0.5, youngAge = 0.2, fuelA = 0.3)
+  ins$studyAreaWithSpreadParams[[fireSenseUtils::spreadFitCovCentreTxt]] <- list(centre)
+  o <- order(covs$pixelID)
+  med <- stats::median(covs$MDC)
+  yr <- med / 200 - 0.4; dev <- (covs$MDC[o] - med + 100) / 200 - 0.5
+  ya <- covs$youngAge[o]; fuel <- biomass[o] / fireSenseUtils::fuelLinearRange[2]
+  fuelC <- ifelse(ya > 0, 0, fuel) - 0.3            # fuel is cleared where youngAge is non-zero, then centred
+  inter <- ifelse(ya > 0, 0, yr * fuelC)            # the interaction is 0 there, and is not centred again
+  x <- 0.4 + 1.5 * yr + 0.8 * dev - 0.5 * (ya - 0.2) + 1 * fuelC - 2 * inter
+  expect_equal(predVals(toyRun(ins))[cellsPL], handLogistic3(x), tolerance = 1e-7)
+})
