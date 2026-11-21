@@ -295,6 +295,11 @@ spreadPredictRun <- function(sim) {
     accPL <- matrix(0, NROW(covs), length(linkParNames), dimnames = list(NULL, linkParNames))
     accX <- numeric(NROW(covs))
     wsumPL <- numeric(NROW(covs))   ## weight of the ELFs with a linear-predictor link only
+    ## the ELF label of every cell (a whole-raster read): once, and only if a fit has split climate terms
+    isSplit <- vapply(seq_along(ids), function(i)
+      any(fireSenseUtils::isClimateSplitCol(fireSenseUtils::spreadSourceCols(names(paramSetForRep(sa$params[[i]], rep))))),
+      logical(1))
+    elfLab <- if (any(isSplit)) fireSenseUtils::elfCellLabels(sim$rasterToMatchLargeELF[[1]])
     for (i in seq_along(ids)) {
       these <- which(w[, i] > 0)
       if (!length(these)) next
@@ -302,8 +307,7 @@ spreadPredictRun <- function(sim) {
       p <- do.call(spreadProbOneELF, c(list(covs[these], params = parsI, covMinMax = sa$covMinMax_spread[[i]],
                             yr = time(sim), maxFireSpread = P(sim)$maxFireSpread, flammableRTM = sim$flammableRTM,
                             lowerSpreadProb = P(sim)$lowerSpreadProb,
-                            elfPixels = if (any(fireSenseUtils::isClimateSplitCol(fireSenseUtils::spreadSourceCols(names(parsI)))))
-                              which(fireSenseUtils::elfCellLabels(sim$rasterToMatchLargeELF[[1]]) %in% ids[i]),
+                            elfPixels = if (isSplit[i]) which(elfLab %in% ids[i]),
                             covCentre = ledgerCovCentre(sa, i), climateRef = ledgerClimateRef(sa, i),
                             powerLawPc50 = ledgerPowerLawPc50(sa, i)), lks[[i]]))
       rows <- these[match(p$pixelID, covs$pixelID[these])]
