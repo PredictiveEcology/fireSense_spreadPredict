@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">fireSense_spreadPredict</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.0.9016</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.0.9017</span>
       </span>
     </div>
 
@@ -64,6 +64,8 @@
 <span>  <span class="va">yr</span>,</span>
 <span>  <span class="va">maxFireSpread</span>,</span>
 <span>  <span class="va">lowerSpreadProb</span>,</span>
+<span>  elfPixels <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  flammableRTM <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  covCentre <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  climateRef <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  powerLawPc50 <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -98,6 +100,16 @@ covariates with. Every fitted covariate must be a column of it, or it is left un
 <dt id="arg-yr-maxfirespread-lowerspreadprob">yr, maxFireSpread, lowerSpreadProb<a class="anchor" aria-label="anchor" href="#arg-yr-maxfirespread-lowerspreadprob"></a></dt>
 <dd><p>as for <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/spreadProbFromIntegerCovs.html" class="external-link">fireSenseUtils::spreadProbFromIntegerCovs()</a></code> and
 <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/logistic.html" class="external-link">fireSenseUtils::logisticAll()</a></code>.</p></dd>
+
+
+<dt id="arg-elfpixels">elfPixels<a class="anchor" aria-label="anchor" href="#arg-elfpixels"></a></dt>
+<dd><p>integer; the <code>pixelID</code>s of the ELF's own burnable pixels, the pixels the year's median of a split
+climate covariate (<code>&lt;var&gt;_yr</code>, <code>&lt;var&gt;_dev</code>; <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/climateSplit.html" class="external-link">fireSenseUtils::splitSpreadClimate()</a></code>) is taken over, as in the fit.
+<code>NULL</code> (one fitted ELF) is every row of <code>covs</code> that is flammable. Not used by a fit without split terms.</p></dd>
+
+
+<dt id="arg-flammablertm">flammableRTM<a class="anchor" aria-label="anchor" href="#arg-flammablertm"></a></dt>
+<dd><p><code>sim$flammableRTM</code>; with <code>elfPixels</code> it limits the median to the ELF's flammable pixels (<code><a href="https://rdrr.io/pkg/fireSenseUtils/man/climateSplitRefPixels.html" class="external-link">fireSenseUtils::climateSplitRefPixels()</a></code>, the fit's choice).</p></dd>
 
 
 <dt id="arg-covcentre">covCentre<a class="anchor" aria-label="anchor" href="#arg-covcentre"></a></dt>
