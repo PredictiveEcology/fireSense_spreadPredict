@@ -17,7 +17,7 @@ defineModule(sim, list(
   documentation = list("README.txt", "fireSense_spreadPredict.Rmd"),
   reqdPkgs = list("data.table", "magrittr", "Matrix", "methods", "terra", "SpaDES.core (>=3.0.4)", "stats",
                   "ggplot2", "viridis",
-                  "PredictiveEcology/fireSenseUtils@development (>= 0.2.3.9183)"), # 9183: spreadLinkInputs(activationIntercept =), spreadClimateTxt (fireSenseUtils#255); 9181: spreadLinkInputs(), powerLawPc50 (fireSenseUtils#250); 9165: lowerAsymptote minimum (#230); 9162: smooth links, checkLinkParams() (#229); 9138: powerLawShape
+                  "PredictiveEcology/fireSenseUtils@development (>= 0.2.3.9185)"), # 9185: splitSpreadClimate(), climateSplitRefPixels(), elfCellLabels() (fireSenseUtils#244, version not yet released; CHECK after it merges); 9183: spreadLinkInputs(activationIntercept =), spreadClimateTxt (fireSenseUtils#255); 9181: spreadLinkInputs(), powerLawPc50 (fireSenseUtils#250); 9165: lowerAsymptote minimum (#230); 9162: smooth links, checkLinkParams() (#229); 9138: powerLawShape
   parameters = bindrows(
     defineParameter(name = "lowerSpreadProb", class = "numeric", default = fireSenseUtils::spreadProbFloor,
                     desc = paste("Lower asymptote of the 2- and 3-parameter logistic. Default",
@@ -302,7 +302,7 @@ spreadPredictRun <- function(sim) {
       p <- do.call(spreadProbOneELF, c(list(covs[these], params = parsI, covMinMax = sa$covMinMax_spread[[i]],
                             yr = time(sim), maxFireSpread = P(sim)$maxFireSpread, flammableRTM = sim$flammableRTM,
                             lowerSpreadProb = P(sim)$lowerSpreadProb,
-                            elfPixels = if (any(fireSenseUtils::isClimateSplitCol(names(parsI))))
+                            elfPixels = if (any(fireSenseUtils::isClimateSplitCol(fireSenseUtils::spreadSourceCols(names(parsI)))))
                               which(fireSenseUtils::elfCellLabels(sim$rasterToMatchLargeELF[[1]]) %in% ids[i]),
                             covCentre = ledgerCovCentre(sa, i), climateRef = ledgerClimateRef(sa, i),
                             powerLawPc50 = ledgerPowerLawPc50(sa, i)), lks[[i]]))
@@ -575,15 +575,16 @@ spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSp
   ## the intercept, if the fit has one, is a coefficient with no covariate: it multiplies a column of 1s
   hasIntercept <- fireSenseUtils::spreadInterceptTxt %in% names(params)
   fitted <- setdiff(names(params), c(unlist(fireSenseUtils::logisticParamNames), fireSenseUtils::spreadInterceptTxt))
-  ## a fit made with fireSense_dataPrepFit's spreadClimateSplit has the climate as `<var>_yr` and `<var>_dev`: the
-  ## year's median of the variable over this ELF's burnable pixels, and the departure from it, made as the fit made them
-  splitVars <- unique(fireSenseUtils::climateSplitBase(fitted[fireSenseUtils::isClimateSplitCol(fitted)]))
+  ## an interaction (`CMD:fuel`) is made from its two covariates by spreadProbFromIntegerCovs(), as in the fit
+  needed <- fireSenseUtils::spreadSourceCols(fitted)
+  ## a fit made with fireSense_dataPrepFit's spreadClimateSplit has the climate as `<var>_yr` and `<var>_dev` (also in an
+  ## interaction, `CMD_yr:fuel`): the year's median of the variable over this ELF's burnable pixels, and the departure
+  ## from it, made as the fit made them
+  splitVars <- unique(fireSenseUtils::climateSplitBase(needed[fireSenseUtils::isClimateSplitCol(needed)]))
   if (length(splitVars) && all(splitVars %in% names(covs))) {
     ref <- covs[covs$pixelID %in% fireSenseUtils::climateSplitRefPixels(covs$pixelID, flammableRTM, elfPixels), splitVars, with = FALSE]
     fireSenseUtils::splitSpreadClimate(covs, splitVars, ref)
   }
-  ## an interaction (`CMD:fuel`) is made from its two covariates by spreadProbFromIntegerCovs(), as in the fit
-  needed <- fireSenseUtils::spreadSourceCols(fitted)
   noCov <- setdiff(needed, names(covs))
   if (length(noCov)) {
     stop(

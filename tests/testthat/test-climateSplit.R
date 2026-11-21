@@ -76,3 +76,36 @@ test_that("a fit without split terms predicts as before: no median is taken", {
   expect_identical(predVals(toyRun()), predVals(toyRun(toyInputs())))
   expect_false(any(fireSenseUtils::isClimateSplitCol(names(toyParams()))))
 })
+
+test_that("a split fit with climate in the ceiling moves pc with both terms, and x holds the fuels only", {
+  covs <- toyCovariates()
+  p <- data.frame(maxAsymptote = 0.25, hillSlope1 = 2, inflectionPoint1 = 1, MDC_yr = 1.5, MDC_dev = 0.8,
+                  youngAge = -0.5, fuelA = 1)
+  ins <- toyInputs(covs = covs, params = p, formula = "~ MDC_yr + MDC_dev + youngAge + fuelA - 1")
+  ins$covMinMax_spread <- data.table::data.table(MDC_yr = c(0, 200), MDC_dev = c(-100, 100), youngAge = c(0, 1), fuelA = c(0, 8))
+  ins$studyAreaWithSpreadParams[[linkColPL]] <- "powerLaw"
+  ins$studyAreaWithSpreadParams[[gammaColPL]] <- 1.9
+  ins$studyAreaWithSpreadParams[[fireSenseUtils::spreadFitClimateRefTxt]] <- list(list(MDC_yr = 0.4, MDC_dev = 0.5))
+  ins$studyAreaWithSpreadParams[[fireSenseUtils::spreadFitPowerLawPc50Txt]] <- 0.3
+  sim <- toyRun(ins)
+  o <- order(covs$pixelID)
+  med <- stats::median(covs$MDC)
+  shift <- 1.5 * (med / 200 - 0.4) + 0.8 * ((covs$MDC[o] - med + 100) / 200 - 0.5)
+  x <- -0.5 * covs$youngAge[o] + covs$fuelA[o] / 8
+  pc <- pmax(0.3 - (0.3 - 0.25) * exp(-shift), 0.13)
+  expect_equal(predVals(sim)[cellsPL], pmax(pc - (pc - 0.13) * exp(-sign(x) * abs(x / 1.9)), 0), tolerance = 1e-9)
+  expect_equal(terra::values(sim$fireSense_SpreadLinear, mat = FALSE)[cellsPL], x, tolerance = 1e-9)
+})
+
+test_that("an interaction of a split term is made from the split term, so the fit's interaction names work", {
+  covs <- toyCovariates()
+  p <- data.frame(maxAsymptote = 0.25, hillSlope1 = 2, inflectionPoint1 = 1, MDC_yr = 1.5, MDC_dev = 0.8,
+                  fuelA = 1, `MDC_yr:fuelA` = -2, check.names = FALSE)
+  ins <- toyInputs(covs = covs, params = p, formula = "~ MDC_yr + MDC_dev + fuelA + MDC_yr:fuelA - 1")
+  ins$covMinMax_spread <- cmmSplit()
+  o <- order(covs$pixelID)
+  med <- stats::median(covs$MDC)
+  yr <- med / 200; dev <- (covs$MDC[o] - med + 100) / 200; fuel <- covs$fuelA[o] / 8
+  x <- 1.5 * yr + 0.8 * dev + fuel - 2 * yr * fuel
+  expect_equal(predVals(toyRun(ins))[cellsPL], handLogistic3(x), tolerance = 1e-7)
+})
