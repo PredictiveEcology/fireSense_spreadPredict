@@ -70,15 +70,15 @@ test_that("fireSense_burn's reading of the outputs gives the predicted p, and th
 test_that("a row without the mode column predicts as it did: ceiling with climateRef and a power-law link", {
   ceil <- inputsCA(mode = NULL, a = NULL)
   sa <- ceil$studyAreaWithSpreadParams
-  expect_identical(ledgerSpreadClimate(sa, 1L), "ceiling")
+  expect_identical(fireSenseUtils::ledgerSpreadClimate(sa, 1L), "ceiling")
   sa[[modeColCA]] <- "ceiling"
   ceil2 <- ceil; ceil2$studyAreaWithSpreadParams <- sa
   expect_identical(predVals(toyRun(ceil)), predVals(toyRun(ceil2)))
   ## and a row with neither is "predictor"
   sa0 <- inputsPL()$studyAreaWithSpreadParams
-  expect_identical(ledgerSpreadClimate(sa0, 1L), "predictor")
-  expect_false("spreadClimate" %in% names(ledgerLinkArgs(sa0, 1L)))
-  expect_identical(ledgerLinkArgs(inputsCA()$studyAreaWithSpreadParams, 1L)$spreadClimate, "activation")
+  expect_identical(fireSenseUtils::ledgerSpreadClimate(sa0, 1L), "predictor")
+  expect_false("spreadClimate" %in% names(fireSenseUtils::ledgerLinkArgs(sa0, 1L)))
+  expect_identical(fireSenseUtils::ledgerLinkArgs(inputsCA()$studyAreaWithSpreadParams, 1L)$spreadClimate, "activation")
 })
 
 test_that("an activation row and its parameters must agree, and the link must be powerLawSmooth at the floor", {
@@ -89,7 +89,7 @@ test_that("an activation row and its parameters must agree, and the link must be
   expect_error(toyRun(bad), "lowerAsymptote = lowerSpreadProb")
   sa <- inputsCA()$studyAreaWithSpreadParams
   sa[[modeColCA]] <- "wet"
-  expect_error(ledgerSpreadClimate(sa, 1L), "unknown")
+  expect_error(fireSenseUtils::ledgerSpreadClimate(sa, 1L), "unknown")
 })
 
 test_that("a recorded mode is the fit's: an explicit 'predictor' row ignores a climateRef; 'ceiling' needs one", {
@@ -107,9 +107,9 @@ test_that("a recorded mode is the fit's: an explicit 'predictor' row ignores a c
 test_that("the activation's floor check uses the run's lowerSpreadProb", {
   sa <- inputsCA()$studyAreaWithSpreadParams
   sa[[fireSenseUtils::spreadFitLowerAsymptoteTxt]] <- 0.1
-  expect_identical(ledgerLowerAsymptote(sa, 1L, floor = 0.1), 0.1)
-  expect_error(ledgerLowerAsymptote(sa, 1L), "lowerAsymptote = lowerSpreadProb")
-  expect_identical(ledgerLinkArgs(sa, 1L, floor = 0.1)$lowerAsymptote, 0.1)
+  expect_identical(fireSenseUtils::ledgerLowerAsymptote(sa, 1L, floor = 0.1), 0.1)
+  expect_error(fireSenseUtils::ledgerLowerAsymptote(sa, 1L), "lowerAsymptote = lowerSpreadProb")
+  expect_identical(fireSenseUtils::ledgerLinkArgs(sa, 1L, floor = 0.1)$lowerAsymptote, 0.1)
 })
 
 test_that("ELFs fitted in different spreadClimate modes are not blended", {

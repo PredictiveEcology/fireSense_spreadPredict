@@ -57,7 +57,7 @@ test_that("a richards row predicts the Richards link with no gamma in the ledger
   expect_identical(sim$fireSense_SpreadPowerLaw,
                    c(pc = 0.25, lower = 0.02, nu = 2, B = 1 / fireSenseUtils::spreadPowerLawGamma))
   expect_equal(terra::values(sim$fireSense_SpreadLinear, mat = FALSE)[cellsSL], xSL(), tolerance = 1e-9)
-  expect_null(ledgerPowerLawGamma(ins$studyAreaWithSpreadParams, 1L))
+  expect_null(fireSenseUtils::ledgerPowerLawGamma(ins$studyAreaWithSpreadParams, 1L))
   ## nu = 0 is Gompertz
   g <- predVals(toyRun(inputsSL("richards", lower = 0.13, nu = 0)))
   expect_equal(g[cellsSL], 0.13 + (0.25 - 0.13) * exp(-exp(-xSL() / fireSenseUtils::spreadPowerLawGamma)), tolerance = 1e-9)
@@ -75,23 +75,23 @@ test_that("with L = 0.13 a low-x pixel keeps 0.13 on both new links, and the old
 
 test_that("rows without the columns their link needs stop; the helpers read the columns", {
   sa <- inputsSL("richards")$studyAreaWithSpreadParams
-  expect_identical(ledgerLowerAsymptote(sa, 1L), 0.05)
-  expect_identical(ledgerRichardsNu(sa, 1L), 0.5)
-  expect_identical(ledgerLinkArgs(sa, 1L)$link, "richards")
-  expect_false("powerLawGamma" %in% names(ledgerLinkArgs(sa, 1L)))
+  expect_identical(fireSenseUtils::ledgerLowerAsymptote(sa, 1L), 0.05)
+  expect_identical(fireSenseUtils::ledgerRichardsNu(sa, 1L), 0.5)
+  expect_identical(fireSenseUtils::ledgerLinkArgs(sa, 1L)$link, "richards")
+  expect_false("powerLawGamma" %in% names(fireSenseUtils::ledgerLinkArgs(sa, 1L)))
   sa[[nuColSL]] <- NULL
-  expect_error(ledgerRichardsNu(sa, 1L), "richardsNu must be")
+  expect_error(fireSenseUtils::ledgerRichardsNu(sa, 1L), "richardsNu must be")
   sa <- inputsSL("powerLawSmooth")$studyAreaWithSpreadParams
   sa[[lowerColSL]] <- 0.5
-  expect_error(ledgerLowerAsymptote(sa, 1L), "lowerAsymptote must be")
+  expect_error(fireSenseUtils::ledgerLowerAsymptote(sa, 1L), "lowerAsymptote must be")
   sa[[lowerColSL]] <- 0     # a lower asymptote of 0 is never accepted
-  expect_error(ledgerLowerAsymptote(sa, 1L), "never 0")
+  expect_error(fireSenseUtils::ledgerLowerAsymptote(sa, 1L), "never 0")
   sa[[lowerColSL]] <- NULL
-  expect_error(ledgerLowerAsymptote(sa, 1L), "lowerAsymptote must be")
-  expect_null(ledgerRichardsNu(inputsSL("powerLawSmooth")$studyAreaWithSpreadParams, 1L))
+  expect_error(fireSenseUtils::ledgerLowerAsymptote(sa, 1L), "lowerAsymptote must be")
+  expect_null(fireSenseUtils::ledgerRichardsNu(inputsSL("powerLawSmooth")$studyAreaWithSpreadParams, 1L))
   ## the other links have none
-  expect_null(ledgerLowerAsymptote(toyInputs()$studyAreaWithSpreadParams, 1L))
-  expect_identical(ledgerLinkArgs(toyInputs()$studyAreaWithSpreadParams, 1L), list(powerLawShape = 1))
+  expect_null(fireSenseUtils::ledgerLowerAsymptote(toyInputs()$studyAreaWithSpreadParams, 1L))
+  expect_identical(fireSenseUtils::ledgerLinkArgs(toyInputs()$studyAreaWithSpreadParams, 1L), list(powerLawShape = 1))
 })
 
 test_that("with several ELFs of one new link the parameters blend; with different links it stops", {

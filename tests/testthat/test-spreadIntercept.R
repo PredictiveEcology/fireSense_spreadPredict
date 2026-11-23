@@ -54,15 +54,15 @@ test_that("a row without an intercept or centres predicts exactly as before", {
   v <- predVals(toyRun(inputsI(intercept = FALSE, centre = FALSE)))
   expect_equal(v[cells], handLogistic3(xHand(0)), tolerance = 1e-7)
   expect_identical(v, predVals(toyRun()))
-  expect_null(ledgerCovCentre(toyInputs()$studyAreaWithSpreadParams, 1L))
+  expect_null(fireSenseUtils::ledgerCovCentre(toyInputs()$studyAreaWithSpreadParams, 1L))
 })
 
 test_that("an old ledger row's missing centre is NULL, also beside a row that has one", {
   sa <- data.frame(polygonID = c("A", "B"))
   sa[[centreCol]] <- list(centreI, NULL)         # as rbindlist(fill = TRUE) leaves an older row
-  expect_identical(ledgerCovCentre(sa, 1L), centreI)
-  expect_null(ledgerCovCentre(sa, 2L))
-  expect_null(ledgerCovCentre(data.frame(polygonID = "A"), 1L))
+  expect_identical(fireSenseUtils::ledgerCovCentre(sa, 1L), centreI)
+  expect_null(fireSenseUtils::ledgerCovCentre(sa, 2L))
+  expect_null(fireSenseUtils::ledgerCovCentre(data.frame(polygonID = "A"), 1L))
 })
 
 test_that("with several ELFs each uses its own intercept and centre; an older ELF's row predicts as before", {

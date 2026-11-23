@@ -53,11 +53,11 @@ test_that("a row without a reference predicts exactly as before", {
   withRef <- predVals(toyRun(inputsCO(ref = list(MDC = 0.5))))
   expect_false(isTRUE(all.equal(withRef, base)))
   sa <- toyInputs()$studyAreaWithSpreadParams
-  expect_null(ledgerClimateRef(sa, 1L))
+  expect_null(fireSenseUtils::ledgerClimateRef(sa, 1L))
   sa[[refCol]] <- list(list())
-  expect_null(ledgerClimateRef(sa, 1L))
+  expect_null(fireSenseUtils::ledgerClimateRef(sa, 1L))
   sa[[refCol]] <- list(list(MDC = 0.4))
-  expect_identical(ledgerClimateRef(sa, 1L), list(MDC = 0.4))
+  expect_identical(fireSenseUtils::ledgerClimateRef(sa, 1L), list(MDC = 0.4))
 })
 
 test_that("with several ELFs each row applies its own reference, blended like the probabilities", {
