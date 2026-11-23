@@ -20,10 +20,10 @@ test_that("a row without ranges (an older ledger) falls back to sim$covMinMax_sp
   sa <- data.frame(polygonID = c("A", "B"))
   cmm <- data.table::data.table(MDC = c(0, 200))
   sa$covMinMax_spread <- list(cmm, NULL)
-  expect_identical(ledgerCovMinMax(sa, 1L, "default"), cmm)
-  expect_identical(ledgerCovMinMax(sa, 2L, "default"), "default")
-  expect_identical(ledgerCovMinMax(data.frame(polygonID = "A"), 1L, "default"), "default")
-  expect_null(ledgerCovMinMax(data.frame(polygonID = "A"), 1L))
+  expect_identical(fireSenseUtils::ledgerCovMinMax(sa, 1L, "default"), cmm)
+  expect_identical(fireSenseUtils::ledgerCovMinMax(sa, 2L, "default"), "default")
+  expect_identical(fireSenseUtils::ledgerCovMinMax(data.frame(polygonID = "A"), 1L, "default"), "default")
+  expect_null(fireSenseUtils::ledgerCovMinMax(data.frame(polygonID = "A"), 1L))
 })
 
 test_that("a fitted covariate with no range stops instead of staying unscaled", {

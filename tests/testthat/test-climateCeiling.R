@@ -24,13 +24,13 @@ handCC <- function(gamma = 1.9, pc0 = 0.25, floor = 0.13, p50 = 0.3, ref = 0.4) 
   list(p = pmax(pc - (pc - floor) * exp(-sign(x) * abs(x / gamma)), 0), pc = pc, x = x)
 }
 
-test_that("ledgerPowerLawPc50() reads the row's p50, NULL when absent or NA", {
+test_that("fireSenseUtils::ledgerPowerLawPc50() reads the row's p50, NULL when absent or NA", {
   sa <- toyInputs()$studyAreaWithSpreadParams
-  expect_null(ledgerPowerLawPc50(sa, 1L))
+  expect_null(fireSenseUtils::ledgerPowerLawPc50(sa, 1L))
   sa[[pc50ColCC]] <- 0.3
-  expect_identical(ledgerPowerLawPc50(sa, 1L), 0.3)
+  expect_identical(fireSenseUtils::ledgerPowerLawPc50(sa, 1L), 0.3)
   sa[[pc50ColCC]] <- NA_real_
-  expect_null(ledgerPowerLawPc50(sa, 1L))   # no climateRef: not needed
+  expect_null(fireSenseUtils::ledgerPowerLawPc50(sa, 1L))   # no climateRef: not needed
 })
 
 test_that("a row with climateRef and a power-law link predicts with climate moving the ceiling toward p50", {
@@ -72,10 +72,10 @@ test_that("a climateRef row without a finite p50 stops, naming the row", {
   expect_error(toyRun(inputsCC(p50 = NULL)), "ledger row 1 has climate in the ceiling")
   expect_error(toyRun(inputsCC(p50 = NA_real_)), "ledger row 1 has climate in the ceiling")
   sa <- inputsCC(p50 = NA_real_)$studyAreaWithSpreadParams
-  expect_error(ledgerPowerLawPc50(sa, 1L), "no finite")
+  expect_error(fireSenseUtils::ledgerPowerLawPc50(sa, 1L), "no finite")
   ## a row without climateRef has no use for it: NULL, no error
   sa[[refColCC]] <- NULL
-  expect_null(ledgerPowerLawPc50(sa, 1L))
+  expect_null(fireSenseUtils::ledgerPowerLawPc50(sa, 1L))
 })
 
 test_that("with several ELFs the per-pixel parameters are blended, an ELF without climateRef contributing its vector", {

@@ -28,16 +28,16 @@ test_that("a row of any other link predicts exactly as before", {
   expect_identical(predVals(toyRun(inputsPL(gamma = NULL, link = NULL))), base)
   expect_identical(predVals(toyRun(inputsPL(gamma = 4, link = "ceiling"))), base)   # gamma ignored
   sa <- toyInputs()$studyAreaWithSpreadParams
-  expect_null(ledgerPowerLawGamma(sa, 1L))
+  expect_null(fireSenseUtils::ledgerPowerLawGamma(sa, 1L))
   sa[[linkColPL]] <- "climateOutside"
-  expect_null(ledgerPowerLawGamma(sa, 1L))
+  expect_null(fireSenseUtils::ledgerPowerLawGamma(sa, 1L))
   sa[[linkColPL]] <- "powerLaw"; sa[[gammaColPL]] <- 2.2
-  expect_identical(ledgerPowerLawGamma(sa, 1L), 2.2)
+  expect_identical(fireSenseUtils::ledgerPowerLawGamma(sa, 1L), 2.2)
   ## a powerLaw row without a usable gamma stops, instead of predicting with the wrong link
   sa[[gammaColPL]] <- NA_real_
-  expect_error(ledgerPowerLawGamma(sa, 1L), "no valid")
+  expect_error(fireSenseUtils::ledgerPowerLawGamma(sa, 1L), "no valid")
   sa[[gammaColPL]] <- NULL
-  expect_error(ledgerPowerLawGamma(sa, 1L), "no valid")
+  expect_error(fireSenseUtils::ledgerPowerLawGamma(sa, 1L), "no valid")
 })
 
 test_that("with several ELFs each row applies its own link, blended like the probabilities", {
@@ -136,11 +136,11 @@ test_that("a row's powerLawShape_spread bends the link; a row without it, or NA,
   ins$studyAreaWithSpreadParams[[shapeColPL]] <- 1
   expect_identical(predVals(toyRun(ins))[cellsPL], base)
   sa <- toyInputs()$studyAreaWithSpreadParams
-  expect_identical(ledgerPowerLawShape(sa, 1L), 1)
+  expect_identical(fireSenseUtils::ledgerPowerLawShape(sa, 1L), 1)
   sa[[shapeColPL]] <- 2.5
-  expect_identical(ledgerPowerLawShape(sa, 1L), 2.5)
+  expect_identical(fireSenseUtils::ledgerPowerLawShape(sa, 1L), 2.5)
   sa[[shapeColPL]] <- -1
-  expect_error(ledgerPowerLawShape(sa, 1L), "invalid")
+  expect_error(fireSenseUtils::ledgerPowerLawShape(sa, 1L), "invalid")
   ## the linear predictor mapped by the link with the handed shape reproduces p
   ins$studyAreaWithSpreadParams[[shapeColPL]] <- 2
   sim <- toyRun(ins)
