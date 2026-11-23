@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">fireSense_spreadPredict</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.0.9017</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.0.9018</span>
       </span>
     </div>
 
@@ -93,7 +93,7 @@ spread formula has but the fit does not); only the covariates named in <code>par
 
 
 <dt id="arg-covminmax">covMinMax<a class="anchor" aria-label="anchor" href="#arg-covminmax"></a></dt>
-<dd><p>the ELF's <code>covMinMax_spread</code> (<code><a href="ledgerCovMinMax.html">ledgerCovMinMax()</a></code>): the ranges the fit rescaled its
+<dd><p>the ELF's <code>covMinMax_spread</code> (<code><a href="https://rdrr.io/pkg/fireSenseUtils/man/ledgerCovMinMax.html" class="external-link">fireSenseUtils::ledgerCovMinMax()</a></code>): the ranges the fit rescaled its
 covariates with. Every fitted covariate must be a column of it, or it is left unscaled.</p></dd>
 
 
@@ -113,7 +113,7 @@ climate covariate (<code>&lt;var&gt;_yr</code>, <code>&lt;var&gt;_dev</code>; <c
 
 
 <dt id="arg-covcentre">covCentre<a class="anchor" aria-label="anchor" href="#arg-covcentre"></a></dt>
-<dd><p>the ELF's <code>covCentre_spread</code> (<code><a href="ledgerCovCentre.html">ledgerCovCentre()</a></code>): the covariate means the fit subtracted
+<dd><p>the ELF's <code>covCentre_spread</code> (<code><a href="https://rdrr.io/pkg/fireSenseUtils/man/ledgerCovCentre.html" class="external-link">fireSenseUtils::ledgerCovCentre()</a></code>): the covariate means the fit subtracted
 from the rescaled covariates; <code>NULL</code> (a fit without an intercept, or an older ledger row) centres nothing.
 A parameter set with <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/fireSenseUtils-constants.html" class="external-link">fireSenseUtils::spreadInterceptTxt</a></code> has an intercept, added as a column of 1s after
 the covariates are rescaled and centred, as in the fit. A coefficient named <code>a:b</code> is an interaction: <code>covs</code> must
@@ -122,44 +122,44 @@ rescaled and centred (0 where <code>youngAge</code> cleared the fuel), exactly a
 
 
 <dt id="arg-climateref">climateRef<a class="anchor" aria-label="anchor" href="#arg-climateref"></a></dt>
-<dd><p>the ELF's <code>climateRef_spread</code> (<code><a href="ledgerClimateRef.html">ledgerClimateRef()</a></code>): with a fit made with climate outside the
+<dd><p>the ELF's <code>climateRef_spread</code> (<code><a href="https://rdrr.io/pkg/fireSenseUtils/man/ledgerClimateRef.html" class="external-link">fireSenseUtils::ledgerClimateRef()</a></code>): with a fit made with climate outside the
 <code>maxAsymptote</code> ceiling (<code>fireSense_spreadFit</code>'s <code>spreadLink = "climateOutside"</code>) or moving it (<code>spreadClimate = "ceiling"</code>), the reference value of each climate covariate; <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/spreadProbFromCovs.html" class="external-link">fireSenseUtils::spreadProbFromCovs()</a></code> and
 <code>spreadLinkInputs()</code> then apply that link, exactly as the fit did.
 <code>NULL</code> (a fit with climate under the ceiling, or an older ledger row) is the link as it always was.</p></dd>
 
 
 <dt id="arg-powerlawpc-">powerLawPc50<a class="anchor" aria-label="anchor" href="#arg-powerlawpc-"></a></dt>
-<dd><p>the ELF's <code>powerLawPc50_spread</code> (<code><a href="ledgerPowerLawPc50.html">ledgerPowerLawPc50()</a></code>): with <code>climateRef</code> and a power-law <code>link</code>
+<dd><p>the ELF's <code>powerLawPc50_spread</code> (<code><a href="https://rdrr.io/pkg/fireSenseUtils/man/ledgerPowerLawPc50.html" class="external-link">fireSenseUtils::ledgerPowerLawPc50()</a></code>): with <code>climateRef</code> and a power-law <code>link</code>
 (a fit with <code>fireSense_spreadFit</code>'s <code>spreadClimate = "ceiling"</code>), the runaway threshold the ceiling moves toward;
 <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/spreadLinkInputs.html" class="external-link">fireSenseUtils::spreadLinkInputs()</a></code> ignores it without <code>climateRef</code>.</p></dd>
 
 
 <dt id="arg-powerlawgamma">powerLawGamma<a class="anchor" aria-label="anchor" href="#arg-powerlawgamma"></a></dt>
-<dd><p>the ELF's <code>powerLawGamma_spread</code> (<code><a href="ledgerPowerLawGamma.html">ledgerPowerLawGamma()</a></code>): with a fit made with
+<dd><p>the ELF's <code>powerLawGamma_spread</code> (<code><a href="https://rdrr.io/pkg/fireSenseUtils/man/ledgerPowerLawGamma.html" class="external-link">fireSenseUtils::ledgerPowerLawGamma()</a></code>): with a fit made with
 <code>fireSense_spreadFit</code>'s <code>spreadLink = "powerLaw"</code>, its <code>gamma</code>; <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/spreadProbFromCovs.html" class="external-link">fireSenseUtils::spreadProbFromCovs()</a></code> then
 applies that link (<code><a href="https://rdrr.io/pkg/fireSenseUtils/man/powerLawLink.html" class="external-link">fireSenseUtils::powerLawLink()</a></code>, with <code>maxAsymptote</code> as <code>p_c</code>), exactly as the fit did.
 <code>NULL</code> (any other link) is the link as it always was.</p></dd>
 
 
 <dt id="arg-powerlawshape">powerLawShape<a class="anchor" aria-label="anchor" href="#arg-powerlawshape"></a></dt>
-<dd><p>the ELF's <code>powerLawShape_spread</code> (<code><a href="ledgerPowerLawShape.html">ledgerPowerLawShape()</a></code>): the <code>shape</code> of the link, with
+<dd><p>the ELF's <code>powerLawShape_spread</code> (<code><a href="https://rdrr.io/pkg/fireSenseUtils/man/ledgerPowerLawShape.html" class="external-link">fireSenseUtils::ledgerPowerLawShape()</a></code>): the <code>shape</code> of the link, with
 <code>powerLawGamma</code>; 1 (the original link) by default.</p></dd>
 
 
 <dt id="arg-link">link<a class="anchor" aria-label="anchor" href="#arg-link"></a></dt>
-<dd><p>the ELF's link when it is one of <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/fireSenseUtils-constants.html" class="external-link">fireSenseUtils::spreadLinearLinks</a></code> (<code><a href="ledgerLinkArgs.html">ledgerLinkArgs()</a></code>); <code>NULL</code> (any
+<dd><p>the ELF's link when it is one of <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/fireSenseUtils-constants.html" class="external-link">fireSenseUtils::spreadLinearLinks</a></code> (<code><a href="https://rdrr.io/pkg/fireSenseUtils/man/ledgerLinkArgs.html" class="external-link">fireSenseUtils::ledgerLinkArgs()</a></code>); <code>NULL</code> (any
 other link). By default <code>"powerLaw"</code> when <code>powerLawGamma</code> is given, the link of a row written before the
 others existed.</p></dd>
 
 
 <dt id="arg-lowerasymptote-richardsnu">lowerAsymptote, richardsNu<a class="anchor" aria-label="anchor" href="#arg-lowerasymptote-richardsnu"></a></dt>
-<dd><p>the ELF's <code>lowerAsymptote_spread</code> and <code>richardsNu_spread</code> (<code><a href="ledgerLowerAsymptote.html">ledgerLowerAsymptote()</a></code>,
-<code><a href="ledgerRichardsNu.html">ledgerRichardsNu()</a></code>): with <code>"powerLawSmooth"</code> and <code>"richards"</code>, the lower asymptote, and <code>nu</code> of <code>"richards"</code>.</p></dd>
+<dd><p>the ELF's <code>lowerAsymptote_spread</code> and <code>richardsNu_spread</code> (<code><a href="https://rdrr.io/pkg/fireSenseUtils/man/ledgerLowerAsymptote.html" class="external-link">fireSenseUtils::ledgerLowerAsymptote()</a></code>,
+<code><a href="https://rdrr.io/pkg/fireSenseUtils/man/ledgerRichardsNu.html" class="external-link">fireSenseUtils::ledgerRichardsNu()</a></code>): with <code>"powerLawSmooth"</code> and <code>"richards"</code>, the lower asymptote, and <code>nu</code> of <code>"richards"</code>.</p></dd>
 
 
 <dt id="arg-spreadclimate">spreadClimate<a class="anchor" aria-label="anchor" href="#arg-spreadclimate"></a></dt>
 <dd><p><code>NULL</code> (a row that does not record it: predicted as it always was), or the row's recorded
-<code>spreadClimate</code> (<code><a href="ledgerLinkArgs.html">ledgerLinkArgs()</a></code>). <code>"predictor"</code> predicts with climate in x even when the row has a <code>climateRef</code>;
+<code>spreadClimate</code> (<code><a href="https://rdrr.io/pkg/fireSenseUtils/man/ledgerLinkArgs.html" class="external-link">fireSenseUtils::ledgerLinkArgs()</a></code>). <code>"predictor"</code> predicts with climate in x even when the row has a <code>climateRef</code>;
 <code>"ceiling"</code> and <code>"activation"</code> need one. With <code>"activation"</code> the parameter set's
 <code>activationIntercept</code> (<code><a href="https://rdrr.io/pkg/fireSenseUtils/man/fireSenseUtils-constants.html" class="external-link">fireSenseUtils::activationInterceptTxt</a></code>) is not a covariate coefficient: it goes to
 <code><a href="https://rdrr.io/pkg/fireSenseUtils/man/spreadLinkInputs.html" class="external-link">fireSenseUtils::spreadLinkInputs()</a></code>, where fuel sets each pixel's <code>pc</code> below <code>powerLawPc50</code> and climate is <code>x</code>.</p></dd>

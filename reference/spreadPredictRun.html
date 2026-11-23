@@ -19,7 +19,7 @@ paramSetForRep()), and writes it to sim$fireSense_SpreadPredicted. Parameter set
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">fireSense_spreadPredict</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.0.9017</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.0.9018</span>
       </span>
     </div>
 
@@ -79,7 +79,7 @@ probability with ONE parameter set (row) of the fit, chosen by the <code>.rep</c
     <div id="details">
     <h2>Details</h2>
     <p>With one fitted ELF (one row of <code>sim$studyAreaWithSpreadParams</code>) every pixel uses its parameters and
-its <code>covMinMax_spread</code> (<code><a href="ledgerCovMinMax.html">ledgerCovMinMax()</a></code>; <code>sim$covMinMax_spread</code> only when the row has none). With several, each ELF's model (its parameter set, its <code>covMinMax_spread</code>, and
+its <code>covMinMax_spread</code> (<code><a href="https://rdrr.io/pkg/fireSenseUtils/man/ledgerCovMinMax.html" class="external-link">fireSenseUtils::ledgerCovMinMax()</a></code>; <code>sim$covMinMax_spread</code> only when the row has none). With several, each ELF's model (its parameter set, its <code>covMinMax_spread</code>, and
 only the covariates it was fitted with) predicts its own pixels, from <code>sim$rasterToMatchLargeELF</code>, and
 those within <code>ELFblendWidth</code> of them; overlapping predictions are averaged with the weights of
 <code><a href="ELFblendWeights.html">ELFblendWeights()</a></code>.</p>
