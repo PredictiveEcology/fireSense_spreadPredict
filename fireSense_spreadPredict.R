@@ -17,7 +17,7 @@ defineModule(sim, list(
   documentation = list("README.txt", "fireSense_spreadPredict.Rmd"),
   reqdPkgs = list("data.table", "magrittr", "Matrix", "methods", "terra", "SpaDES.core (>=3.0.4)", "stats",
                   "ggplot2", "viridis",
-                  "PredictiveEcology/fireSenseUtils@development (>= 0.2.3.9193)"), # 9193 (placeholder until the climate hinge PR (fireSenseUtils) merges and is bumped): ledgerClimateHingeKnots(), addClimateHinge(), climateHingeBase(); 9191 (placeholder until fireSenseUtils#260 merges and is bumped): the ledger*() row readers (fireSenseUtils#260); 9186: splitSpreadClimate(), climateSplitRefPixels(), elfCellLabels() (fireSenseUtils#244); 9183: spreadLinkInputs(activationIntercept =), spreadClimateTxt (fireSenseUtils#255); 9181: spreadLinkInputs(), powerLawPc50 (fireSenseUtils#250); 9165: lowerAsymptote minimum (#230); 9162: smooth links, checkLinkParams() (#229); 9138: powerLawShape
+                  "PredictiveEcology/fireSenseUtils@development (>= 0.2.3.9193)"), # 9193 (placeholder until the climate curve PR (fireSenseUtils) merges and is bumped): ledgerClimateCurvePars(), addClimateCurve(), climateCurveBase(); 9191 (placeholder until fireSenseUtils#260 merges and is bumped): the ledger*() row readers (fireSenseUtils#260); 9186: splitSpreadClimate(), climateSplitRefPixels(), elfCellLabels() (fireSenseUtils#244); 9183: spreadLinkInputs(activationIntercept =), spreadClimateTxt (fireSenseUtils#255); 9181: spreadLinkInputs(), powerLawPc50 (fireSenseUtils#250); 9165: lowerAsymptote minimum (#230); 9162: smooth links, checkLinkParams() (#229); 9138: powerLawShape
   parameters = bindrows(
     defineParameter(name = "lowerSpreadProb", class = "numeric", default = fireSenseUtils::spreadProbFloor,
                     desc = paste("Lower asymptote of the 2- and 3-parameter logistic. Default",
@@ -260,7 +260,7 @@ spreadPredictRun <- function(sim) {
                              yr = time(sim),
                              maxFireSpread = P(sim)$maxFireSpread, lowerSpreadProb = P(sim)$lowerSpreadProb,
                              covCentre = fireSenseUtils::ledgerCovCentre(sa, 1L), climateRef = fireSenseUtils::ledgerClimateRef(sa, 1L),
-                             climateHingeKnots = fireSenseUtils::ledgerClimateHingeKnots(sa, 1L),
+                             climateCurvePars = fireSenseUtils::ledgerClimateCurvePars(sa, 1L),
                              powerLawPc50 = fireSenseUtils::ledgerPowerLawPc50(sa, 1L)), lk1))
     for (nm in names(randomEffectOutputs)) sim[[nm]] <- randomEffectSDOf(params1, randomEffectOutputs[[nm]])
     sim$fireSense_SpreadLink <- lk1$link
@@ -310,7 +310,7 @@ spreadPredictRun <- function(sim) {
                             lowerSpreadProb = P(sim)$lowerSpreadProb,
                             elfPixels = if (isSplit[i]) which(elfLab %in% ids[i]),
                             covCentre = fireSenseUtils::ledgerCovCentre(sa, i), climateRef = fireSenseUtils::ledgerClimateRef(sa, i),
-                            climateHingeKnots = fireSenseUtils::ledgerClimateHingeKnots(sa, i),
+                            climateCurvePars = fireSenseUtils::ledgerClimateCurvePars(sa, i),
                             powerLawPc50 = fireSenseUtils::ledgerPowerLawPc50(sa, i)), lks[[i]]))
       rows <- these[match(p$pixelID, covs$pixelID[these])]
       acc[rows] <- acc[rows] + w[rows, i] * p$spreadProb
@@ -507,11 +507,11 @@ ELFblendWeights <- function(elfRas, template, pixelID, ids, width) {
 #'   the covariates are rescaled and centred, as in the fit. A coefficient named `a:b` is an interaction: `covs` must
 #'   have `a` and `b`, and `fireSenseUtils::spreadProbFromIntegerCovs()` multiplies them after each is
 #'   rescaled and centred (0 where `youngAge` cleared the fuel), exactly as in the fit.
-#' @param climateHingeKnots the ELF's `climateHingeKnots_spread` (`fireSenseUtils::ledgerClimateHingeKnots()`): the knot of each
-#'   climate variable of a fit made with `fireSense_dataPrepFit`'s `spreadClimateHinge`. A coefficient named `<var>_hinge`
-#'   multiplies `pmax(0, <var> - knot)` of the pixel's own value, made as in the fit (`fireSenseUtils::addClimateHinge()`), before
-#'   the split terms replace the variable. `NULL` (a fit without hinge terms, or an older ledger row) makes none; a hinge
-#'   coefficient without its knot stops.
+#' @param climateCurvePars the ELF's `climateCurvePars_spread` (`fireSenseUtils::ledgerClimateCurvePars()`): `k` and `s` of each
+#'   climate variable of a fit made with `fireSense_dataPrepFit`'s `spreadClimateCurve`. A coefficient named `<var>_curve`
+#'   multiplies `fireSenseUtils::softplus(<var> - k, s)` of the pixel's own value, made as in the fit (`fireSenseUtils::addClimateCurve()`), before
+#'   the split terms replace the variable. `NULL` (a fit without curve terms, or an older ledger row) makes none; a curve
+#'   coefficient without its `k` and `s` stops.
 #' @param climateRef the ELF's `climateRef_spread` (`fireSenseUtils::ledgerClimateRef()`): with a fit made with climate outside the
 #'   `maxAsymptote` ceiling (`fireSense_spreadFit`'s `spreadLink = "climateOutside"`) or moving it (`spreadClimate =
 #'   "ceiling"`), the reference value of each climate covariate; `fireSenseUtils::spreadProbFromCovs()` and
@@ -542,7 +542,7 @@ ELFblendWeights <- function(elfRas, template, pixelID, ids, width) {
 #'   the ceiling a matrix with one row per pixel.
 spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSpreadProb, elfPixels = NULL, flammableRTM = NULL,
                              covCentre = NULL, climateRef = NULL, powerLawPc50 = NULL, powerLawGamma = NULL,
-                             climateHingeKnots = NULL,
+                             climateCurvePars = NULL,
                              powerLawShape = fireSenseUtils::spreadPowerLawShape,
                              link = if (!is.null(powerLawGamma)) "powerLaw",
                              lowerAsymptote = fireSenseUtils::spreadProbFloor,
@@ -589,21 +589,21 @@ spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSp
   fitted <- setdiff(names(params), c(unlist(fireSenseUtils::logisticParamNames), fireSenseUtils::spreadInterceptTxt))
   ## an interaction (`CMD:fuel`) is made from its two covariates by spreadProbFromIntegerCovs(), as in the fit
   needed <- fireSenseUtils::spreadSourceCols(fitted)
-  ## a fit made with fireSense_dataPrepFit's spreadClimateHinge has `<var>_hinge` = pmax(0, var - knot), the knot from the ledger row;
+  ## a fit made with fireSense_dataPrepFit's spreadClimateCurve has `<var>_curve` = softplus(var - k, s), `k` and `s` from the ledger row;
   ## made from the pixel's own value, so before the split below removes the variable
-  hingeCols <- needed[fireSenseUtils::isClimateHingeCol(needed)]
-  if (length(hingeCols)) {
-    hingeVars <- fireSenseUtils::climateHingeBase(hingeCols)
-    noKnot <- setdiff(hingeVars, names(climateHingeKnots))
-    if (length(noKnot))
-      stop(moduleName, "> the fitted coefficients ", paste(hingeCols[hingeVars %in% noKnot], collapse = ", "), " need a knot, but the ledger row's '",
-           fireSenseUtils::spreadFitClimateHingeKnotsTxt, "' has ", if (length(climateHingeKnots)) paste(names(climateHingeKnots), collapse = ", ") else "none",
+  curveCols <- needed[fireSenseUtils::isClimateCurveCol(needed)]
+  if (length(curveCols)) {
+    curveVars <- fireSenseUtils::climateCurveBase(curveCols)
+    noPars <- setdiff(curveVars, names(climateCurvePars))
+    if (length(noPars))
+      stop(moduleName, "> the fitted coefficients ", paste(curveCols[curveVars %in% noPars], collapse = ", "), " need `k` and `s`, but the ledger row's '",
+           fireSenseUtils::spreadFitClimateCurveParsTxt, "' has ", if (length(climateCurvePars)) paste(names(climateCurvePars), collapse = ", ") else "none",
            call. = FALSE)
-    noClimate <- setdiff(hingeVars, names(covs))
+    noClimate <- setdiff(curveVars, names(covs))
     if (length(noClimate))
-      stop(moduleName, "> the fitted hinge coefficients ", paste(hingeCols[hingeVars %in% noClimate], collapse = ", "),
+      stop(moduleName, "> the fitted curve coefficients ", paste(curveCols[curveVars %in% noClimate], collapse = ", "),
            " have no climate covariate ", paste(noClimate, collapse = ", "), call. = FALSE)
-    fireSenseUtils::addClimateHinge(covs, climateHingeKnots[hingeVars])
+    fireSenseUtils::addClimateCurve(covs, climateCurvePars[curveVars])
   }
   ## a fit made with fireSense_dataPrepFit's spreadClimateSplit has the climate as `<var>_yr` and `<var>_dev` (also in an
   ## interaction, `CMD_yr:fuel`): the year's median of the variable over this ELF's burnable pixels, and the departure
