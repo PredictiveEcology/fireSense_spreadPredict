@@ -45,7 +45,7 @@ test_that("a fit without curve terms predicts as before, even with k and s in it
   ins <- toyInputs()
   ins$studyAreaWithSpreadParams[[fireSenseUtils::spreadFitClimateCurveParsTxt]] <- I(list(list(MDC = c(k = 100, s = 40))))
   expect_identical(predVals(toyRun(ins)), base)
-  expect_false(any(fireSenseUtils::isClimateCurveCol(names(toyParams()))))
+  expect_false(any(fireSenseUtils::isClimateTermCol(names(toyParams()), fireSenseUtils::climateCurveSuffix)))
 })
 
 test_that("with a split fit the curve is of the pixel's own value, beside the split terms", {

@@ -17,7 +17,7 @@ defineModule(sim, list(
   documentation = list("README.txt", "fireSense_spreadPredict.Rmd"),
   reqdPkgs = list("data.table", "magrittr", "Matrix", "methods", "terra", "SpaDES.core (>=3.0.4)", "stats",
                   "ggplot2", "viridis",
-                  "PredictiveEcology/fireSenseUtils@development (>= 0.2.3.9193)"), # 9193 (placeholder until the climate curve PR (fireSenseUtils) merges and is bumped): ledgerClimateCurvePars(), addClimateCurve(), climateCurveBase(); 9191 (placeholder until fireSenseUtils#260 merges and is bumped): the ledger*() row readers (fireSenseUtils#260); 9186: splitSpreadClimate(), climateSplitRefPixels(), elfCellLabels() (fireSenseUtils#244); 9183: spreadLinkInputs(activationIntercept =), spreadClimateTxt (fireSenseUtils#255); 9181: spreadLinkInputs(), powerLawPc50 (fireSenseUtils#250); 9165: lowerAsymptote minimum (#230); 9162: smooth links, checkLinkParams() (#229); 9138: powerLawShape
+                  "PredictiveEcology/fireSenseUtils@development (>= 0.2.3.9193)"), # 9193 (placeholder until the climate curve PR (fireSenseUtils) merges and is bumped): ledgerClimateCurvePars(), addClimateCurve(), isClimateTermCol(), climateTermBase(); 9191 (placeholder until fireSenseUtils#260 merges and is bumped): the ledger*() row readers (fireSenseUtils#260); 9186: splitSpreadClimate(), climateSplitRefPixels(), elfCellLabels() (fireSenseUtils#244); 9183: spreadLinkInputs(activationIntercept =), spreadClimateTxt (fireSenseUtils#255); 9181: spreadLinkInputs(), powerLawPc50 (fireSenseUtils#250); 9165: lowerAsymptote minimum (#230); 9162: smooth links, checkLinkParams() (#229); 9138: powerLawShape
   parameters = bindrows(
     defineParameter(name = "lowerSpreadProb", class = "numeric", default = fireSenseUtils::spreadProbFloor,
                     desc = paste("Lower asymptote of the 2- and 3-parameter logistic. Default",
@@ -591,9 +591,9 @@ spreadProbOneELF <- function(covs, params, covMinMax, yr, maxFireSpread, lowerSp
   needed <- fireSenseUtils::spreadSourceCols(fitted)
   ## a fit made with fireSense_dataPrepFit's spreadClimateCurve has `<var>_curve` = softplus(var - k, s), `k` and `s` from the ledger row;
   ## made from the pixel's own value, so before the split below removes the variable
-  curveCols <- needed[fireSenseUtils::isClimateCurveCol(needed)]
+  curveCols <- needed[fireSenseUtils::isClimateTermCol(needed, fireSenseUtils::climateCurveSuffix)]
   if (length(curveCols)) {
-    curveVars <- fireSenseUtils::climateCurveBase(curveCols)
+    curveVars <- fireSenseUtils::climateTermBase(curveCols, fireSenseUtils::climateCurveSuffix)
     noPars <- setdiff(curveVars, names(climateCurvePars))
     if (length(noPars))
       stop(moduleName, "> the fitted coefficients ", paste(curveCols[curveVars %in% noPars], collapse = ", "), " need `k` and `s`, but the ledger row's '",
